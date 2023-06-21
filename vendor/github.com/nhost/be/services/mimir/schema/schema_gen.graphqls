@@ -1294,6 +1294,10 @@ type ConfigConfig {
     Configuration for observability service
     """
     observability: ConfigObservability!
+    """
+
+    """
+    services: [ConfigService!]
 }
 
 input ConfigConfigUpdateInput {
@@ -1305,6 +1309,7 @@ input ConfigConfigUpdateInput {
     provider: ConfigProviderUpdateInput
     storage: ConfigStorageUpdateInput
     observability: ConfigObservabilityUpdateInput
+        services: [ConfigServiceUpdateInput!]
 }
 
 input ConfigConfigInsertInput {
@@ -1316,6 +1321,7 @@ input ConfigConfigInsertInput {
     provider: ConfigProviderInsertInput
     storage: ConfigStorageInsertInput
     observability: ConfigObservabilityInsertInput!
+        services: [ConfigServiceInsertInput!]
 }
 
 input ConfigConfigComparisonExp {
@@ -1330,6 +1336,7 @@ input ConfigConfigComparisonExp {
     provider: ConfigProviderComparisonExp
     storage: ConfigStorageComparisonExp
     observability: ConfigObservabilityComparisonExp
+    services: ConfigServiceComparisonExp
 }
 
 scalar ConfigEmail
@@ -1939,6 +1946,279 @@ input ConfigResourcesComputeComparisonExp {
 """
 
 """
+type ConfigService {
+    """
+
+    """
+    name: String!
+    """
+
+    """
+    image: ConfigServiceImage
+    """
+
+    """
+    command: [String!]
+    """
+
+    """
+    environment: [ConfigEnvironmentVariable!]
+    """
+
+    """
+    ports: [ConfigServicePort!]
+    """
+
+    """
+    resources: ConfigServiceResources!
+}
+
+input ConfigServiceUpdateInput {
+    name: String
+    image: ConfigServiceImageUpdateInput
+        command: [String!]
+        environment: [ConfigEnvironmentVariableUpdateInput!]
+        ports: [ConfigServicePortUpdateInput!]
+    resources: ConfigServiceResourcesUpdateInput
+}
+
+input ConfigServiceInsertInput {
+    name: String!
+    image: ConfigServiceImageInsertInput
+        command: [String!]
+        environment: [ConfigEnvironmentVariableInsertInput!]
+        ports: [ConfigServicePortInsertInput!]
+    resources: ConfigServiceResourcesInsertInput!
+}
+
+input ConfigServiceComparisonExp {
+    _and: [ConfigServiceComparisonExp!]
+    _not: ConfigServiceComparisonExp
+    _or: [ConfigServiceComparisonExp!]
+    name: ConfigStringComparisonExp
+    image: ConfigServiceImageComparisonExp
+    command: ConfigStringComparisonExp
+    environment: ConfigEnvironmentVariableComparisonExp
+    ports: ConfigServicePortComparisonExp
+    resources: ConfigServiceResourcesComparisonExp
+}
+
+"""
+
+"""
+type ConfigServiceBuild {
+    """
+
+    """
+    buildCommand: [String!]
+    """
+
+    """
+    runtime: String!
+}
+
+input ConfigServiceBuildUpdateInput {
+        buildCommand: [String!]
+    runtime: String
+}
+
+input ConfigServiceBuildInsertInput {
+        buildCommand: [String!]
+    runtime: String!
+}
+
+input ConfigServiceBuildComparisonExp {
+    _and: [ConfigServiceBuildComparisonExp!]
+    _not: ConfigServiceBuildComparisonExp
+    _or: [ConfigServiceBuildComparisonExp!]
+    buildCommand: ConfigStringComparisonExp
+    runtime: ConfigStringComparisonExp
+}
+
+"""
+
+"""
+type ConfigServiceImage {
+    """
+
+    """
+    image: String
+    """
+
+    """
+    buildCommand: [String!]
+    """
+
+    """
+    runtime: String
+}
+
+input ConfigServiceImageUpdateInput {
+    image: String
+        buildCommand: [String!]
+    runtime: String
+}
+
+input ConfigServiceImageInsertInput {
+    image: String
+        buildCommand: [String!]
+    runtime: String
+}
+
+input ConfigServiceImageComparisonExp {
+    _and: [ConfigServiceImageComparisonExp!]
+    _not: ConfigServiceImageComparisonExp
+    _or: [ConfigServiceImageComparisonExp!]
+    image: ConfigStringComparisonExp
+    buildCommand: ConfigStringComparisonExp
+    runtime: ConfigStringComparisonExp
+}
+
+"""
+
+"""
+type ConfigServicePort {
+    """
+
+    """
+    port: ConfigPort!
+    """
+
+    """
+    type: String!
+    """
+
+    """
+    publish: Boolean
+}
+
+input ConfigServicePortUpdateInput {
+    port: ConfigPort
+    type: String
+    publish: Boolean
+}
+
+input ConfigServicePortInsertInput {
+    port: ConfigPort!
+    type: String!
+    publish: Boolean
+}
+
+input ConfigServicePortComparisonExp {
+    _and: [ConfigServicePortComparisonExp!]
+    _not: ConfigServicePortComparisonExp
+    _or: [ConfigServicePortComparisonExp!]
+    port: ConfigPortComparisonExp
+    type: ConfigStringComparisonExp
+    publish: ConfigBooleanComparisonExp
+}
+
+"""
+Resource configuration for a service
+"""
+type ConfigServiceResources {
+    """
+
+    """
+    compute: ConfigServiceResourcesCompute!
+    """
+
+    """
+    storage: [ConfigServiceResourcesStorage!]
+    """
+    Number of replicas for a service
+    """
+    replicas: ConfigUint8!
+}
+
+input ConfigServiceResourcesUpdateInput {
+    compute: ConfigServiceResourcesComputeUpdateInput
+        storage: [ConfigServiceResourcesStorageUpdateInput!]
+    replicas: ConfigUint8
+}
+
+input ConfigServiceResourcesInsertInput {
+    compute: ConfigServiceResourcesComputeInsertInput!
+        storage: [ConfigServiceResourcesStorageInsertInput!]
+    replicas: ConfigUint8!
+}
+
+input ConfigServiceResourcesComparisonExp {
+    _and: [ConfigServiceResourcesComparisonExp!]
+    _not: ConfigServiceResourcesComparisonExp
+    _or: [ConfigServiceResourcesComparisonExp!]
+    compute: ConfigServiceResourcesComputeComparisonExp
+    storage: ConfigServiceResourcesStorageComparisonExp
+    replicas: ConfigUint8ComparisonExp
+}
+
+"""
+
+"""
+type ConfigServiceResourcesCompute {
+    """
+    milicpus, 1000 milicpus = 1 cpu
+    """
+    cpu: ConfigUint32!
+    """
+    MiB: 128MiB to 30GiB
+    """
+    memory: ConfigUint32!
+}
+
+input ConfigServiceResourcesComputeUpdateInput {
+    cpu: ConfigUint32
+    memory: ConfigUint32
+}
+
+input ConfigServiceResourcesComputeInsertInput {
+    cpu: ConfigUint32!
+    memory: ConfigUint32!
+}
+
+input ConfigServiceResourcesComputeComparisonExp {
+    _and: [ConfigServiceResourcesComputeComparisonExp!]
+    _not: ConfigServiceResourcesComputeComparisonExp
+    _or: [ConfigServiceResourcesComputeComparisonExp!]
+    cpu: ConfigUint32ComparisonExp
+    memory: ConfigUint32ComparisonExp
+}
+
+"""
+
+"""
+type ConfigServiceResourcesStorage {
+    """
+    GiB
+    """
+    capacity: ConfigUint32!
+    """
+
+    """
+    path: String!
+}
+
+input ConfigServiceResourcesStorageUpdateInput {
+    capacity: ConfigUint32
+    path: String
+}
+
+input ConfigServiceResourcesStorageInsertInput {
+    capacity: ConfigUint32!
+    path: String!
+}
+
+input ConfigServiceResourcesStorageComparisonExp {
+    _and: [ConfigServiceResourcesStorageComparisonExp!]
+    _not: ConfigServiceResourcesStorageComparisonExp
+    _or: [ConfigServiceResourcesStorageComparisonExp!]
+    capacity: ConfigUint32ComparisonExp
+    path: ConfigStringComparisonExp
+}
+
+"""
+
+"""
 type ConfigSms {
     """
 
@@ -2294,24 +2574,18 @@ type ConfigSystemConfigPostgres {
 
     """
     connectionString: ConfigSystemConfigPostgresConnectionString!
-    """
-
-    """
-    password: String!
 }
 
 input ConfigSystemConfigPostgresUpdateInput {
     enabled: Boolean
     database: String
     connectionString: ConfigSystemConfigPostgresConnectionStringUpdateInput
-    password: String
 }
 
 input ConfigSystemConfigPostgresInsertInput {
     enabled: Boolean
     database: String!
     connectionString: ConfigSystemConfigPostgresConnectionStringInsertInput!
-    password: String!
 }
 
 input ConfigSystemConfigPostgresComparisonExp {
@@ -2321,7 +2595,6 @@ input ConfigSystemConfigPostgresComparisonExp {
     enabled: ConfigBooleanComparisonExp
     database: ConfigStringComparisonExp
     connectionString: ConfigSystemConfigPostgresConnectionStringComparisonExp
-    password: ConfigStringComparisonExp
 }
 
 """

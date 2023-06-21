@@ -1,0 +1,20 @@
+[[ services ]]
+name = "node-npm"
+
+[services.image]
+runtime ="nodejs"
+
+[[services.environment]]
+name = "NODE_ENV"
+value = "production"
+
+[[services.environment]]
+name = "SOMETHING"
+value = "else"
+
+[services.resources]
+replicas = 1
+
+[services.resources.compute]
+cpu = 250
+memory = 512

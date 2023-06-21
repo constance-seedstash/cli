@@ -1,6 +1,6 @@
 {
   inputs = {
-    nixpkgs.url = "github:nixos/nixpkgs/master";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
     nix-filter.url = "github:numtide/nix-filter";
     flake-utils.url = "github:numtide/flake-utils";
   };
@@ -40,6 +40,10 @@
             (matchExt "nix")
           ];
         };
+
+        builder-image = (import ./nix/builder.nix {
+          inherit pkgs;
+        });
 
         goCheckDeps = with pkgs; [
           golangci-lint
@@ -124,7 +128,8 @@
           default = pkgs.mkShell {
             buildInputs = with pkgs; [
               goreleaser
-            ] ++ goCheckDeps ++ buildInputs ++ nativeBuildInputs;
+            ] ++ goCheckDeps ++ buildInputs ++ nativeBuildInputs
+            ++ builder-image.goDeps ++ builder-image.nodejs18Deps;
           };
 
           cibuild = pkgs.mkShell {
@@ -133,9 +138,24 @@
               goreleaser
             ];
           };
+
+
+          nodejs_18 = pkgs.mkShell {
+            buildInputs = builder-image.nodejs18Deps;
+          };
         };
 
         packages = flake-utils.lib.flattenTree rec {
+          builder-image-go = builder-image.image {
+            suffix = "go";
+            deps = builder-image.goDeps;
+          };
+
+          builder-image-nodejs18 = builder-image.image {
+            suffix = "nodejs18";
+            deps = builder-image.nodejs18Deps;
+          };
+
           cli = pkgs.buildGoModule {
             inherit src version ldflags buildInputs nativeBuildInputs;
 

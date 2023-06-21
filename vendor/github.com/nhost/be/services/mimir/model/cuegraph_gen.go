@@ -7769,6 +7769,8 @@ type ConfigConfig struct {
 	Storage *ConfigStorage `json:"storage,omitempty" toml:"storage,omitempty"`
 	// Configuration for observability service
 	Observability *ConfigObservability `json:"observability,omitempty" toml:"observability,omitempty"`
+
+	Services []*ConfigService `json:"services,omitempty" toml:"services,omitempty"`
 }
 
 func (o *ConfigConfig) MarshalJSON() ([]byte, error) {
@@ -7796,6 +7798,9 @@ func (o *ConfigConfig) MarshalJSON() ([]byte, error) {
 	}
 	if o.Observability != nil {
 		m["observability"] = o.Observability
+	}
+	if o.Services != nil {
+		m["services"] = o.Services
 	}
 	return json.Marshal(m)
 }
@@ -7856,6 +7861,13 @@ func (o *ConfigConfig) GetObservability() *ConfigObservability {
 	return o.Observability
 }
 
+func (o *ConfigConfig) GetServices() []*ConfigService {
+	if o == nil {
+		o = &ConfigConfig{}
+	}
+	return o.Services
+}
+
 type ConfigConfigUpdateInput struct {
 	Global             *ConfigGlobalUpdateInput        `json:"global,omitempty" toml:"global,omitempty"`
 	IsSetGlobal        bool                            `json:"-"`
@@ -7873,6 +7885,8 @@ type ConfigConfigUpdateInput struct {
 	IsSetStorage       bool                            `json:"-"`
 	Observability      *ConfigObservabilityUpdateInput `json:"observability,omitempty" toml:"observability,omitempty"`
 	IsSetObservability bool                            `json:"-"`
+	Services           []*ConfigServiceUpdateInput     `json:"services,omitempty" toml:"services,omitempty"`
+	IsSetServices      bool                            `json:"-"`
 }
 
 func (o *ConfigConfigUpdateInput) UnmarshalGQL(v interface{}) error {
@@ -7960,6 +7974,25 @@ func (o *ConfigConfigUpdateInput) UnmarshalGQL(v interface{}) error {
 		}
 		o.IsSetObservability = true
 	}
+	if v, ok := m["services"]; ok {
+		if v != nil {
+			x, ok := v.([]interface{})
+			if !ok {
+				return fmt.Errorf("Services must be []interface{}, got %T", v)
+			}
+
+			l := make([]*ConfigServiceUpdateInput, len(x))
+			for i, vv := range x {
+				t := &ConfigServiceUpdateInput{}
+				if err := t.UnmarshalGQL(vv); err != nil {
+					return err
+				}
+				l[i] = t
+			}
+			o.Services = l
+		}
+		o.IsSetServices = true
+	}
 
 	return nil
 }
@@ -8025,6 +8058,13 @@ func (o *ConfigConfigUpdateInput) GetObservability() *ConfigObservabilityUpdateI
 		return nil
 	}
 	return o.Observability
+}
+
+func (o *ConfigConfigUpdateInput) GetServices() []*ConfigServiceUpdateInput {
+	if o == nil {
+		o = &ConfigConfigUpdateInput{}
+	}
+	return o.Services
 }
 
 func (s *ConfigConfig) Update(v *ConfigConfigUpdateInput) {
@@ -8111,6 +8151,18 @@ func (s *ConfigConfig) Update(v *ConfigConfigUpdateInput) {
 			s.Observability.Update(v.Observability)
 		}
 	}
+	if v.IsSetServices || v.Services != nil {
+		if v.Services == nil {
+			s.Services = nil
+		} else {
+			s.Services = make([]*ConfigService, len(v.Services))
+			for i, e := range v.Services {
+				v := &ConfigService{}
+				v.Update(e)
+				s.Services[i] = v
+			}
+		}
+	}
 }
 
 type ConfigConfigInsertInput struct {
@@ -8122,6 +8174,7 @@ type ConfigConfigInsertInput struct {
 	Provider      *ConfigProviderInsertInput      `json:"provider,omitempty" toml:"provider,omitempty"`
 	Storage       *ConfigStorageInsertInput       `json:"storage,omitempty" toml:"storage,omitempty"`
 	Observability *ConfigObservabilityInsertInput `json:"observability,omitempty" toml:"observability,omitempty"`
+	Services      []*ConfigServiceInsertInput     `json:"services,omitempty" toml:"services,omitempty"`
 }
 
 func (o *ConfigConfigInsertInput) GetGlobal() *ConfigGlobalInsertInput {
@@ -8180,6 +8233,13 @@ func (o *ConfigConfigInsertInput) GetObservability() *ConfigObservabilityInsertI
 	return o.Observability
 }
 
+func (o *ConfigConfigInsertInput) GetServices() []*ConfigServiceInsertInput {
+	if o == nil {
+		o = &ConfigConfigInsertInput{}
+	}
+	return o.Services
+}
+
 func (s *ConfigConfig) Insert(v *ConfigConfigInsertInput) {
 	if v.Global != nil {
 		if s.Global == nil {
@@ -8229,6 +8289,14 @@ func (s *ConfigConfig) Insert(v *ConfigConfigInsertInput) {
 		}
 		s.Observability.Insert(v.Observability)
 	}
+	if v.Services != nil {
+		s.Services = make([]*ConfigService, len(v.Services))
+		for i, e := range v.Services {
+			v := &ConfigService{}
+			v.Insert(e)
+			s.Services[i] = v
+		}
+	}
 }
 
 func (s *ConfigConfig) Clone() *ConfigConfig {
@@ -8245,6 +8313,12 @@ func (s *ConfigConfig) Clone() *ConfigConfig {
 	v.Provider = s.Provider.Clone()
 	v.Storage = s.Storage.Clone()
 	v.Observability = s.Observability.Clone()
+	if s.Services != nil {
+		v.Services = make([]*ConfigService, len(s.Services))
+		for i, e := range s.Services {
+			v.Services[i] = e.Clone()
+		}
+	}
 	return v
 }
 
@@ -8260,6 +8334,7 @@ type ConfigConfigComparisonExp struct {
 	Provider      *ConfigProviderComparisonExp      `json:"provider,omitempty"`
 	Storage       *ConfigStorageComparisonExp       `json:"storage,omitempty"`
 	Observability *ConfigObservabilityComparisonExp `json:"observability,omitempty"`
+	Services      *ConfigServiceComparisonExp       `json:"services,omitempty"`
 }
 
 func (exp *ConfigConfigComparisonExp) Matches(o *ConfigConfig) bool {
@@ -8277,6 +8352,7 @@ func (exp *ConfigConfigComparisonExp) Matches(o *ConfigConfig) bool {
 			Provider:      &ConfigProvider{},
 			Storage:       &ConfigStorage{},
 			Observability: &ConfigObservability{},
+			Services:      []*ConfigService{},
 		}
 	}
 	if !exp.Global.Matches(o.Global) {
@@ -8302,6 +8378,18 @@ func (exp *ConfigConfigComparisonExp) Matches(o *ConfigConfig) bool {
 	}
 	if !exp.Observability.Matches(o.Observability) {
 		return false
+	}
+	{
+		found := false
+		for _, o := range o.Services {
+			if exp.Services.Matches(o) {
+				found = true
+				break
+			}
+		}
+		if !found && exp.Services != nil {
+			return false
+		}
 	}
 
 	if exp.And != nil && !all(exp.And, o) {
@@ -12139,6 +12227,1893 @@ func (exp *ConfigResourcesComputeComparisonExp) Matches(o *ConfigResourcesComput
 	return true
 }
 
+type ConfigService struct {
+	Name string `json:"name" toml:"name"`
+
+	Image *ConfigServiceImage `json:"image,omitempty" toml:"image,omitempty"`
+
+	Command []string `json:"command,omitempty" toml:"command,omitempty"`
+
+	Environment []*ConfigEnvironmentVariable `json:"environment,omitempty" toml:"environment,omitempty"`
+
+	Ports []*ConfigServicePort `json:"ports,omitempty" toml:"ports,omitempty"`
+
+	Resources *ConfigServiceResources `json:"resources,omitempty" toml:"resources,omitempty"`
+}
+
+func (o *ConfigService) MarshalJSON() ([]byte, error) {
+	m := make(map[string]any)
+	m["name"] = o.Name
+	if o.Image != nil {
+		m["image"] = o.Image
+	}
+	if o.Command != nil {
+		m["command"] = o.Command
+	}
+	if o.Environment != nil {
+		m["environment"] = o.Environment
+	}
+	if o.Ports != nil {
+		m["ports"] = o.Ports
+	}
+	if o.Resources != nil {
+		m["resources"] = o.Resources
+	}
+	return json.Marshal(m)
+}
+
+func (o *ConfigService) GetName() string {
+	if o == nil {
+		o = &ConfigService{}
+	}
+	return o.Name
+}
+
+func (o *ConfigService) GetImage() *ConfigServiceImage {
+	if o == nil {
+		return nil
+	}
+	return o.Image
+}
+
+func (o *ConfigService) GetCommand() []string {
+	if o == nil {
+		o = &ConfigService{}
+	}
+	return o.Command
+}
+
+func (o *ConfigService) GetEnvironment() []*ConfigEnvironmentVariable {
+	if o == nil {
+		o = &ConfigService{}
+	}
+	return o.Environment
+}
+
+func (o *ConfigService) GetPorts() []*ConfigServicePort {
+	if o == nil {
+		o = &ConfigService{}
+	}
+	return o.Ports
+}
+
+func (o *ConfigService) GetResources() *ConfigServiceResources {
+	if o == nil {
+		return nil
+	}
+	return o.Resources
+}
+
+type ConfigServiceUpdateInput struct {
+	Name             *string                                 `json:"name,omitempty" toml:"name,omitempty"`
+	IsSetName        bool                                    `json:"-"`
+	Image            *ConfigServiceImageUpdateInput          `json:"image,omitempty" toml:"image,omitempty"`
+	IsSetImage       bool                                    `json:"-"`
+	Command          []string                                `json:"command,omitempty" toml:"command,omitempty"`
+	IsSetCommand     bool                                    `json:"-"`
+	Environment      []*ConfigEnvironmentVariableUpdateInput `json:"environment,omitempty" toml:"environment,omitempty"`
+	IsSetEnvironment bool                                    `json:"-"`
+	Ports            []*ConfigServicePortUpdateInput         `json:"ports,omitempty" toml:"ports,omitempty"`
+	IsSetPorts       bool                                    `json:"-"`
+	Resources        *ConfigServiceResourcesUpdateInput      `json:"resources,omitempty" toml:"resources,omitempty"`
+	IsSetResources   bool                                    `json:"-"`
+}
+
+func (o *ConfigServiceUpdateInput) UnmarshalGQL(v interface{}) error {
+	m, ok := v.(map[string]any)
+	if !ok {
+		return fmt.Errorf("must be map[string]interface{}, got %T", v)
+	}
+	if v, ok := m["name"]; ok {
+		if v == nil {
+			o.Name = nil
+		} else {
+			// clearly a not very efficient shortcut
+			b, err := json.Marshal(v)
+			if err != nil {
+				return err
+			}
+			var x string
+			if err := json.Unmarshal(b, &x); err != nil {
+				return err
+			}
+			o.Name = &x
+		}
+		o.IsSetName = true
+	}
+	if x, ok := m["image"]; ok {
+		if x != nil {
+			t := &ConfigServiceImageUpdateInput{}
+			if err := t.UnmarshalGQL(x); err != nil {
+				return err
+			}
+			o.Image = t
+		}
+		o.IsSetImage = true
+	}
+	if v, ok := m["command"]; ok {
+		if v != nil {
+			// clearly a not very efficient shortcut
+			b, err := json.Marshal(v)
+			if err != nil {
+				return err
+			}
+			var l []string
+			if err := json.Unmarshal(b, &l); err != nil {
+				return err
+			}
+			o.Command = l
+		}
+		o.IsSetCommand = true
+	}
+	if v, ok := m["environment"]; ok {
+		if v != nil {
+			x, ok := v.([]interface{})
+			if !ok {
+				return fmt.Errorf("Environment must be []interface{}, got %T", v)
+			}
+
+			l := make([]*ConfigEnvironmentVariableUpdateInput, len(x))
+			for i, vv := range x {
+				t := &ConfigEnvironmentVariableUpdateInput{}
+				if err := t.UnmarshalGQL(vv); err != nil {
+					return err
+				}
+				l[i] = t
+			}
+			o.Environment = l
+		}
+		o.IsSetEnvironment = true
+	}
+	if v, ok := m["ports"]; ok {
+		if v != nil {
+			x, ok := v.([]interface{})
+			if !ok {
+				return fmt.Errorf("Ports must be []interface{}, got %T", v)
+			}
+
+			l := make([]*ConfigServicePortUpdateInput, len(x))
+			for i, vv := range x {
+				t := &ConfigServicePortUpdateInput{}
+				if err := t.UnmarshalGQL(vv); err != nil {
+					return err
+				}
+				l[i] = t
+			}
+			o.Ports = l
+		}
+		o.IsSetPorts = true
+	}
+	if x, ok := m["resources"]; ok {
+		if x != nil {
+			t := &ConfigServiceResourcesUpdateInput{}
+			if err := t.UnmarshalGQL(x); err != nil {
+				return err
+			}
+			o.Resources = t
+		}
+		o.IsSetResources = true
+	}
+
+	return nil
+}
+
+func (o *ConfigServiceUpdateInput) MarshalGQL(w io.Writer) {
+	enc := json.NewEncoder(w)
+	if err := enc.Encode(o); err != nil {
+		panic(err)
+	}
+}
+
+func (o *ConfigServiceUpdateInput) GetName() *string {
+	if o == nil {
+		o = &ConfigServiceUpdateInput{}
+	}
+	return o.Name
+}
+
+func (o *ConfigServiceUpdateInput) GetImage() *ConfigServiceImageUpdateInput {
+	if o == nil {
+		return nil
+	}
+	return o.Image
+}
+
+func (o *ConfigServiceUpdateInput) GetCommand() []string {
+	if o == nil {
+		o = &ConfigServiceUpdateInput{}
+	}
+	return o.Command
+}
+
+func (o *ConfigServiceUpdateInput) GetEnvironment() []*ConfigEnvironmentVariableUpdateInput {
+	if o == nil {
+		o = &ConfigServiceUpdateInput{}
+	}
+	return o.Environment
+}
+
+func (o *ConfigServiceUpdateInput) GetPorts() []*ConfigServicePortUpdateInput {
+	if o == nil {
+		o = &ConfigServiceUpdateInput{}
+	}
+	return o.Ports
+}
+
+func (o *ConfigServiceUpdateInput) GetResources() *ConfigServiceResourcesUpdateInput {
+	if o == nil {
+		return nil
+	}
+	return o.Resources
+}
+
+func (s *ConfigService) Update(v *ConfigServiceUpdateInput) {
+	if v == nil {
+		return
+	}
+	if v.IsSetName || v.Name != nil {
+		if v.Name != nil {
+			s.Name = *v.Name
+		}
+	}
+	if v.IsSetImage || v.Image != nil {
+		if v.Image == nil {
+			s.Image = nil
+		} else {
+			if s.Image == nil {
+				s.Image = &ConfigServiceImage{}
+			}
+			s.Image.Update(v.Image)
+		}
+	}
+	if v.IsSetCommand || v.Command != nil {
+		if v.Command == nil {
+			s.Command = nil
+		} else {
+			s.Command = make([]string, len(v.Command))
+			for i, e := range v.Command {
+				s.Command[i] = e
+			}
+		}
+	}
+	if v.IsSetEnvironment || v.Environment != nil {
+		if v.Environment == nil {
+			s.Environment = nil
+		} else {
+			s.Environment = make([]*ConfigEnvironmentVariable, len(v.Environment))
+			for i, e := range v.Environment {
+				v := &ConfigEnvironmentVariable{}
+				v.Update(e)
+				s.Environment[i] = v
+			}
+		}
+	}
+	if v.IsSetPorts || v.Ports != nil {
+		if v.Ports == nil {
+			s.Ports = nil
+		} else {
+			s.Ports = make([]*ConfigServicePort, len(v.Ports))
+			for i, e := range v.Ports {
+				v := &ConfigServicePort{}
+				v.Update(e)
+				s.Ports[i] = v
+			}
+		}
+	}
+	if v.IsSetResources || v.Resources != nil {
+		if v.Resources == nil {
+			s.Resources = nil
+		} else {
+			if s.Resources == nil {
+				s.Resources = &ConfigServiceResources{}
+			}
+			s.Resources.Update(v.Resources)
+		}
+	}
+}
+
+type ConfigServiceInsertInput struct {
+	Name        string                                  `json:"name,omitempty" toml:"name,omitempty"`
+	Image       *ConfigServiceImageInsertInput          `json:"image,omitempty" toml:"image,omitempty"`
+	Command     []string                                `json:"command,omitempty" toml:"command,omitempty"`
+	Environment []*ConfigEnvironmentVariableInsertInput `json:"environment,omitempty" toml:"environment,omitempty"`
+	Ports       []*ConfigServicePortInsertInput         `json:"ports,omitempty" toml:"ports,omitempty"`
+	Resources   *ConfigServiceResourcesInsertInput      `json:"resources,omitempty" toml:"resources,omitempty"`
+}
+
+func (o *ConfigServiceInsertInput) GetName() string {
+	if o == nil {
+		o = &ConfigServiceInsertInput{}
+	}
+	return o.Name
+}
+
+func (o *ConfigServiceInsertInput) GetImage() *ConfigServiceImageInsertInput {
+	if o == nil {
+		return nil
+	}
+	return o.Image
+}
+
+func (o *ConfigServiceInsertInput) GetCommand() []string {
+	if o == nil {
+		o = &ConfigServiceInsertInput{}
+	}
+	return o.Command
+}
+
+func (o *ConfigServiceInsertInput) GetEnvironment() []*ConfigEnvironmentVariableInsertInput {
+	if o == nil {
+		o = &ConfigServiceInsertInput{}
+	}
+	return o.Environment
+}
+
+func (o *ConfigServiceInsertInput) GetPorts() []*ConfigServicePortInsertInput {
+	if o == nil {
+		o = &ConfigServiceInsertInput{}
+	}
+	return o.Ports
+}
+
+func (o *ConfigServiceInsertInput) GetResources() *ConfigServiceResourcesInsertInput {
+	if o == nil {
+		return nil
+	}
+	return o.Resources
+}
+
+func (s *ConfigService) Insert(v *ConfigServiceInsertInput) {
+	s.Name = v.Name
+	if v.Image != nil {
+		if s.Image == nil {
+			s.Image = &ConfigServiceImage{}
+		}
+		s.Image.Insert(v.Image)
+	}
+	if v.Command != nil {
+		s.Command = make([]string, len(v.Command))
+		for i, e := range v.Command {
+			s.Command[i] = e
+		}
+	}
+	if v.Environment != nil {
+		s.Environment = make([]*ConfigEnvironmentVariable, len(v.Environment))
+		for i, e := range v.Environment {
+			v := &ConfigEnvironmentVariable{}
+			v.Insert(e)
+			s.Environment[i] = v
+		}
+	}
+	if v.Ports != nil {
+		s.Ports = make([]*ConfigServicePort, len(v.Ports))
+		for i, e := range v.Ports {
+			v := &ConfigServicePort{}
+			v.Insert(e)
+			s.Ports[i] = v
+		}
+	}
+	if v.Resources != nil {
+		if s.Resources == nil {
+			s.Resources = &ConfigServiceResources{}
+		}
+		s.Resources.Insert(v.Resources)
+	}
+}
+
+func (s *ConfigService) Clone() *ConfigService {
+	if s == nil {
+		return nil
+	}
+
+	v := &ConfigService{}
+	v.Name = s.Name
+	v.Image = s.Image.Clone()
+	if s.Command != nil {
+		v.Command = make([]string, len(s.Command))
+		copy(v.Command, s.Command)
+	}
+	if s.Environment != nil {
+		v.Environment = make([]*ConfigEnvironmentVariable, len(s.Environment))
+		for i, e := range s.Environment {
+			v.Environment[i] = e.Clone()
+		}
+	}
+	if s.Ports != nil {
+		v.Ports = make([]*ConfigServicePort, len(s.Ports))
+		for i, e := range s.Ports {
+			v.Ports[i] = e.Clone()
+		}
+	}
+	v.Resources = s.Resources.Clone()
+	return v
+}
+
+type ConfigServiceComparisonExp struct {
+	And         []*ConfigServiceComparisonExp           `json:"_and,omitempty"`
+	Not         *ConfigServiceComparisonExp             `json:"_not,omitempty"`
+	Or          []*ConfigServiceComparisonExp           `json:"_or,omitempty"`
+	Name        *ConfigStringComparisonExp              `json:"name,omitempty"`
+	Image       *ConfigServiceImageComparisonExp        `json:"image,omitempty"`
+	Command     *ConfigStringComparisonExp              `json:"command,omitempty"`
+	Environment *ConfigEnvironmentVariableComparisonExp `json:"environment,omitempty"`
+	Ports       *ConfigServicePortComparisonExp         `json:"ports,omitempty"`
+	Resources   *ConfigServiceResourcesComparisonExp    `json:"resources,omitempty"`
+}
+
+func (exp *ConfigServiceComparisonExp) Matches(o *ConfigService) bool {
+	if exp == nil {
+		return true
+	}
+
+	if o == nil {
+		o = &ConfigService{
+			Image:       &ConfigServiceImage{},
+			Command:     []string{},
+			Environment: []*ConfigEnvironmentVariable{},
+			Ports:       []*ConfigServicePort{},
+			Resources:   &ConfigServiceResources{},
+		}
+	}
+	if !exp.Name.Matches(o.Name) {
+		return false
+	}
+	if !exp.Image.Matches(o.Image) {
+		return false
+	}
+	{
+		found := false
+		for _, o := range o.Command {
+			if exp.Command.Matches(o) {
+				found = true
+				break
+			}
+		}
+		if !found && exp.Command != nil {
+			return false
+		}
+	}
+	{
+		found := false
+		for _, o := range o.Environment {
+			if exp.Environment.Matches(o) {
+				found = true
+				break
+			}
+		}
+		if !found && exp.Environment != nil {
+			return false
+		}
+	}
+	{
+		found := false
+		for _, o := range o.Ports {
+			if exp.Ports.Matches(o) {
+				found = true
+				break
+			}
+		}
+		if !found && exp.Ports != nil {
+			return false
+		}
+	}
+	if !exp.Resources.Matches(o.Resources) {
+		return false
+	}
+
+	if exp.And != nil && !all(exp.And, o) {
+		return false
+	}
+
+	if exp.Or != nil && !or(exp.Or, o) {
+		return false
+	}
+
+	if exp.Not != nil && exp.Not.Matches(o) {
+		return false
+	}
+
+	return true
+}
+
+type ConfigServiceBuild struct {
+	BuildCommand []string `json:"buildCommand,omitempty" toml:"buildCommand,omitempty"`
+
+	Runtime string `json:"runtime" toml:"runtime"`
+}
+
+func (o *ConfigServiceBuild) MarshalJSON() ([]byte, error) {
+	m := make(map[string]any)
+	if o.BuildCommand != nil {
+		m["buildCommand"] = o.BuildCommand
+	}
+	m["runtime"] = o.Runtime
+	return json.Marshal(m)
+}
+
+func (o *ConfigServiceBuild) GetBuildCommand() []string {
+	if o == nil {
+		o = &ConfigServiceBuild{}
+	}
+	return o.BuildCommand
+}
+
+func (o *ConfigServiceBuild) GetRuntime() string {
+	if o == nil {
+		o = &ConfigServiceBuild{}
+	}
+	return o.Runtime
+}
+
+type ConfigServiceBuildUpdateInput struct {
+	BuildCommand      []string `json:"buildCommand,omitempty" toml:"buildCommand,omitempty"`
+	IsSetBuildCommand bool     `json:"-"`
+	Runtime           *string  `json:"runtime,omitempty" toml:"runtime,omitempty"`
+	IsSetRuntime      bool     `json:"-"`
+}
+
+func (o *ConfigServiceBuildUpdateInput) UnmarshalGQL(v interface{}) error {
+	m, ok := v.(map[string]any)
+	if !ok {
+		return fmt.Errorf("must be map[string]interface{}, got %T", v)
+	}
+	if v, ok := m["buildCommand"]; ok {
+		if v != nil {
+			// clearly a not very efficient shortcut
+			b, err := json.Marshal(v)
+			if err != nil {
+				return err
+			}
+			var l []string
+			if err := json.Unmarshal(b, &l); err != nil {
+				return err
+			}
+			o.BuildCommand = l
+		}
+		o.IsSetBuildCommand = true
+	}
+	if v, ok := m["runtime"]; ok {
+		if v == nil {
+			o.Runtime = nil
+		} else {
+			// clearly a not very efficient shortcut
+			b, err := json.Marshal(v)
+			if err != nil {
+				return err
+			}
+			var x string
+			if err := json.Unmarshal(b, &x); err != nil {
+				return err
+			}
+			o.Runtime = &x
+		}
+		o.IsSetRuntime = true
+	}
+
+	return nil
+}
+
+func (o *ConfigServiceBuildUpdateInput) MarshalGQL(w io.Writer) {
+	enc := json.NewEncoder(w)
+	if err := enc.Encode(o); err != nil {
+		panic(err)
+	}
+}
+
+func (o *ConfigServiceBuildUpdateInput) GetBuildCommand() []string {
+	if o == nil {
+		o = &ConfigServiceBuildUpdateInput{}
+	}
+	return o.BuildCommand
+}
+
+func (o *ConfigServiceBuildUpdateInput) GetRuntime() *string {
+	if o == nil {
+		o = &ConfigServiceBuildUpdateInput{}
+	}
+	return o.Runtime
+}
+
+func (s *ConfigServiceBuild) Update(v *ConfigServiceBuildUpdateInput) {
+	if v == nil {
+		return
+	}
+	if v.IsSetBuildCommand || v.BuildCommand != nil {
+		if v.BuildCommand == nil {
+			s.BuildCommand = nil
+		} else {
+			s.BuildCommand = make([]string, len(v.BuildCommand))
+			for i, e := range v.BuildCommand {
+				s.BuildCommand[i] = e
+			}
+		}
+	}
+	if v.IsSetRuntime || v.Runtime != nil {
+		if v.Runtime != nil {
+			s.Runtime = *v.Runtime
+		}
+	}
+}
+
+type ConfigServiceBuildInsertInput struct {
+	BuildCommand []string `json:"buildCommand,omitempty" toml:"buildCommand,omitempty"`
+	Runtime      string   `json:"runtime,omitempty" toml:"runtime,omitempty"`
+}
+
+func (o *ConfigServiceBuildInsertInput) GetBuildCommand() []string {
+	if o == nil {
+		o = &ConfigServiceBuildInsertInput{}
+	}
+	return o.BuildCommand
+}
+
+func (o *ConfigServiceBuildInsertInput) GetRuntime() string {
+	if o == nil {
+		o = &ConfigServiceBuildInsertInput{}
+	}
+	return o.Runtime
+}
+
+func (s *ConfigServiceBuild) Insert(v *ConfigServiceBuildInsertInput) {
+	if v.BuildCommand != nil {
+		s.BuildCommand = make([]string, len(v.BuildCommand))
+		for i, e := range v.BuildCommand {
+			s.BuildCommand[i] = e
+		}
+	}
+	s.Runtime = v.Runtime
+}
+
+func (s *ConfigServiceBuild) Clone() *ConfigServiceBuild {
+	if s == nil {
+		return nil
+	}
+
+	v := &ConfigServiceBuild{}
+	if s.BuildCommand != nil {
+		v.BuildCommand = make([]string, len(s.BuildCommand))
+		copy(v.BuildCommand, s.BuildCommand)
+	}
+	v.Runtime = s.Runtime
+	return v
+}
+
+type ConfigServiceBuildComparisonExp struct {
+	And          []*ConfigServiceBuildComparisonExp `json:"_and,omitempty"`
+	Not          *ConfigServiceBuildComparisonExp   `json:"_not,omitempty"`
+	Or           []*ConfigServiceBuildComparisonExp `json:"_or,omitempty"`
+	BuildCommand *ConfigStringComparisonExp         `json:"buildCommand,omitempty"`
+	Runtime      *ConfigStringComparisonExp         `json:"runtime,omitempty"`
+}
+
+func (exp *ConfigServiceBuildComparisonExp) Matches(o *ConfigServiceBuild) bool {
+	if exp == nil {
+		return true
+	}
+
+	if o == nil {
+		o = &ConfigServiceBuild{
+			BuildCommand: []string{},
+		}
+	}
+	{
+		found := false
+		for _, o := range o.BuildCommand {
+			if exp.BuildCommand.Matches(o) {
+				found = true
+				break
+			}
+		}
+		if !found && exp.BuildCommand != nil {
+			return false
+		}
+	}
+	if !exp.Runtime.Matches(o.Runtime) {
+		return false
+	}
+
+	if exp.And != nil && !all(exp.And, o) {
+		return false
+	}
+
+	if exp.Or != nil && !or(exp.Or, o) {
+		return false
+	}
+
+	if exp.Not != nil && exp.Not.Matches(o) {
+		return false
+	}
+
+	return true
+}
+
+type ConfigServiceImage struct {
+	Image *string `json:"image" toml:"image"`
+
+	BuildCommand []string `json:"buildCommand,omitempty" toml:"buildCommand,omitempty"`
+
+	Runtime *string `json:"runtime" toml:"runtime"`
+}
+
+func (o *ConfigServiceImage) MarshalJSON() ([]byte, error) {
+	m := make(map[string]any)
+	if o.Image != nil {
+		m["image"] = o.Image
+	}
+	if o.BuildCommand != nil {
+		m["buildCommand"] = o.BuildCommand
+	}
+	if o.Runtime != nil {
+		m["runtime"] = o.Runtime
+	}
+	return json.Marshal(m)
+}
+
+func (o *ConfigServiceImage) GetImage() *string {
+	if o == nil {
+		o = &ConfigServiceImage{}
+	}
+	return o.Image
+}
+
+func (o *ConfigServiceImage) GetBuildCommand() []string {
+	if o == nil {
+		o = &ConfigServiceImage{}
+	}
+	return o.BuildCommand
+}
+
+func (o *ConfigServiceImage) GetRuntime() *string {
+	if o == nil {
+		o = &ConfigServiceImage{}
+	}
+	return o.Runtime
+}
+
+type ConfigServiceImageUpdateInput struct {
+	Image             *string  `json:"image,omitempty" toml:"image,omitempty"`
+	IsSetImage        bool     `json:"-"`
+	BuildCommand      []string `json:"buildCommand,omitempty" toml:"buildCommand,omitempty"`
+	IsSetBuildCommand bool     `json:"-"`
+	Runtime           *string  `json:"runtime,omitempty" toml:"runtime,omitempty"`
+	IsSetRuntime      bool     `json:"-"`
+}
+
+func (o *ConfigServiceImageUpdateInput) UnmarshalGQL(v interface{}) error {
+	m, ok := v.(map[string]any)
+	if !ok {
+		return fmt.Errorf("must be map[string]interface{}, got %T", v)
+	}
+	if v, ok := m["image"]; ok {
+		if v == nil {
+			o.Image = nil
+		} else {
+			// clearly a not very efficient shortcut
+			b, err := json.Marshal(v)
+			if err != nil {
+				return err
+			}
+			var x string
+			if err := json.Unmarshal(b, &x); err != nil {
+				return err
+			}
+			o.Image = &x
+		}
+		o.IsSetImage = true
+	}
+	if v, ok := m["buildCommand"]; ok {
+		if v != nil {
+			// clearly a not very efficient shortcut
+			b, err := json.Marshal(v)
+			if err != nil {
+				return err
+			}
+			var l []string
+			if err := json.Unmarshal(b, &l); err != nil {
+				return err
+			}
+			o.BuildCommand = l
+		}
+		o.IsSetBuildCommand = true
+	}
+	if v, ok := m["runtime"]; ok {
+		if v == nil {
+			o.Runtime = nil
+		} else {
+			// clearly a not very efficient shortcut
+			b, err := json.Marshal(v)
+			if err != nil {
+				return err
+			}
+			var x string
+			if err := json.Unmarshal(b, &x); err != nil {
+				return err
+			}
+			o.Runtime = &x
+		}
+		o.IsSetRuntime = true
+	}
+
+	return nil
+}
+
+func (o *ConfigServiceImageUpdateInput) MarshalGQL(w io.Writer) {
+	enc := json.NewEncoder(w)
+	if err := enc.Encode(o); err != nil {
+		panic(err)
+	}
+}
+
+func (o *ConfigServiceImageUpdateInput) GetImage() *string {
+	if o == nil {
+		o = &ConfigServiceImageUpdateInput{}
+	}
+	return o.Image
+}
+
+func (o *ConfigServiceImageUpdateInput) GetBuildCommand() []string {
+	if o == nil {
+		o = &ConfigServiceImageUpdateInput{}
+	}
+	return o.BuildCommand
+}
+
+func (o *ConfigServiceImageUpdateInput) GetRuntime() *string {
+	if o == nil {
+		o = &ConfigServiceImageUpdateInput{}
+	}
+	return o.Runtime
+}
+
+func (s *ConfigServiceImage) Update(v *ConfigServiceImageUpdateInput) {
+	if v == nil {
+		return
+	}
+	if v.IsSetImage || v.Image != nil {
+		s.Image = v.Image
+	}
+	if v.IsSetBuildCommand || v.BuildCommand != nil {
+		if v.BuildCommand == nil {
+			s.BuildCommand = nil
+		} else {
+			s.BuildCommand = make([]string, len(v.BuildCommand))
+			for i, e := range v.BuildCommand {
+				s.BuildCommand[i] = e
+			}
+		}
+	}
+	if v.IsSetRuntime || v.Runtime != nil {
+		s.Runtime = v.Runtime
+	}
+}
+
+type ConfigServiceImageInsertInput struct {
+	Image        *string  `json:"image,omitempty" toml:"image,omitempty"`
+	BuildCommand []string `json:"buildCommand,omitempty" toml:"buildCommand,omitempty"`
+	Runtime      *string  `json:"runtime,omitempty" toml:"runtime,omitempty"`
+}
+
+func (o *ConfigServiceImageInsertInput) GetImage() *string {
+	if o == nil {
+		o = &ConfigServiceImageInsertInput{}
+	}
+	return o.Image
+}
+
+func (o *ConfigServiceImageInsertInput) GetBuildCommand() []string {
+	if o == nil {
+		o = &ConfigServiceImageInsertInput{}
+	}
+	return o.BuildCommand
+}
+
+func (o *ConfigServiceImageInsertInput) GetRuntime() *string {
+	if o == nil {
+		o = &ConfigServiceImageInsertInput{}
+	}
+	return o.Runtime
+}
+
+func (s *ConfigServiceImage) Insert(v *ConfigServiceImageInsertInput) {
+	s.Image = v.Image
+	if v.BuildCommand != nil {
+		s.BuildCommand = make([]string, len(v.BuildCommand))
+		for i, e := range v.BuildCommand {
+			s.BuildCommand[i] = e
+		}
+	}
+	s.Runtime = v.Runtime
+}
+
+func (s *ConfigServiceImage) Clone() *ConfigServiceImage {
+	if s == nil {
+		return nil
+	}
+
+	v := &ConfigServiceImage{}
+	v.Image = s.Image
+	if s.BuildCommand != nil {
+		v.BuildCommand = make([]string, len(s.BuildCommand))
+		copy(v.BuildCommand, s.BuildCommand)
+	}
+	v.Runtime = s.Runtime
+	return v
+}
+
+type ConfigServiceImageComparisonExp struct {
+	And          []*ConfigServiceImageComparisonExp `json:"_and,omitempty"`
+	Not          *ConfigServiceImageComparisonExp   `json:"_not,omitempty"`
+	Or           []*ConfigServiceImageComparisonExp `json:"_or,omitempty"`
+	Image        *ConfigStringComparisonExp         `json:"image,omitempty"`
+	BuildCommand *ConfigStringComparisonExp         `json:"buildCommand,omitempty"`
+	Runtime      *ConfigStringComparisonExp         `json:"runtime,omitempty"`
+}
+
+func (exp *ConfigServiceImageComparisonExp) Matches(o *ConfigServiceImage) bool {
+	if exp == nil {
+		return true
+	}
+
+	if o == nil {
+		o = &ConfigServiceImage{
+			BuildCommand: []string{},
+		}
+	}
+	if o.Image != nil && !exp.Image.Matches(*o.Image) {
+		return false
+	}
+	{
+		found := false
+		for _, o := range o.BuildCommand {
+			if exp.BuildCommand.Matches(o) {
+				found = true
+				break
+			}
+		}
+		if !found && exp.BuildCommand != nil {
+			return false
+		}
+	}
+	if o.Runtime != nil && !exp.Runtime.Matches(*o.Runtime) {
+		return false
+	}
+
+	if exp.And != nil && !all(exp.And, o) {
+		return false
+	}
+
+	if exp.Or != nil && !or(exp.Or, o) {
+		return false
+	}
+
+	if exp.Not != nil && exp.Not.Matches(o) {
+		return false
+	}
+
+	return true
+}
+
+type ConfigServicePort struct {
+	Port uint16 `json:"port" toml:"port"`
+
+	Type string `json:"type" toml:"type"`
+
+	Publish *bool `json:"publish" toml:"publish"`
+}
+
+func (o *ConfigServicePort) MarshalJSON() ([]byte, error) {
+	m := make(map[string]any)
+	m["port"] = o.Port
+	m["type"] = o.Type
+	if o.Publish != nil {
+		m["publish"] = o.Publish
+	}
+	return json.Marshal(m)
+}
+
+func (o *ConfigServicePort) GetPort() uint16 {
+	if o == nil {
+		o = &ConfigServicePort{}
+	}
+	return o.Port
+}
+
+func (o *ConfigServicePort) GetType() string {
+	if o == nil {
+		o = &ConfigServicePort{}
+	}
+	return o.Type
+}
+
+func (o *ConfigServicePort) GetPublish() *bool {
+	if o == nil {
+		o = &ConfigServicePort{}
+	}
+	return o.Publish
+}
+
+type ConfigServicePortUpdateInput struct {
+	Port         *uint16 `json:"port,omitempty" toml:"port,omitempty"`
+	IsSetPort    bool    `json:"-"`
+	Type         *string `json:"type,omitempty" toml:"type,omitempty"`
+	IsSetType    bool    `json:"-"`
+	Publish      *bool   `json:"publish,omitempty" toml:"publish,omitempty"`
+	IsSetPublish bool    `json:"-"`
+}
+
+func (o *ConfigServicePortUpdateInput) UnmarshalGQL(v interface{}) error {
+	m, ok := v.(map[string]any)
+	if !ok {
+		return fmt.Errorf("must be map[string]interface{}, got %T", v)
+	}
+	if v, ok := m["port"]; ok {
+		if v == nil {
+			o.Port = nil
+		} else {
+			// clearly a not very efficient shortcut
+			b, err := json.Marshal(v)
+			if err != nil {
+				return err
+			}
+			var x uint16
+			if err := json.Unmarshal(b, &x); err != nil {
+				return err
+			}
+			o.Port = &x
+		}
+		o.IsSetPort = true
+	}
+	if v, ok := m["type"]; ok {
+		if v == nil {
+			o.Type = nil
+		} else {
+			// clearly a not very efficient shortcut
+			b, err := json.Marshal(v)
+			if err != nil {
+				return err
+			}
+			var x string
+			if err := json.Unmarshal(b, &x); err != nil {
+				return err
+			}
+			o.Type = &x
+		}
+		o.IsSetType = true
+	}
+	if v, ok := m["publish"]; ok {
+		if v == nil {
+			o.Publish = nil
+		} else {
+			// clearly a not very efficient shortcut
+			b, err := json.Marshal(v)
+			if err != nil {
+				return err
+			}
+			var x bool
+			if err := json.Unmarshal(b, &x); err != nil {
+				return err
+			}
+			o.Publish = &x
+		}
+		o.IsSetPublish = true
+	}
+
+	return nil
+}
+
+func (o *ConfigServicePortUpdateInput) MarshalGQL(w io.Writer) {
+	enc := json.NewEncoder(w)
+	if err := enc.Encode(o); err != nil {
+		panic(err)
+	}
+}
+
+func (o *ConfigServicePortUpdateInput) GetPort() *uint16 {
+	if o == nil {
+		o = &ConfigServicePortUpdateInput{}
+	}
+	return o.Port
+}
+
+func (o *ConfigServicePortUpdateInput) GetType() *string {
+	if o == nil {
+		o = &ConfigServicePortUpdateInput{}
+	}
+	return o.Type
+}
+
+func (o *ConfigServicePortUpdateInput) GetPublish() *bool {
+	if o == nil {
+		o = &ConfigServicePortUpdateInput{}
+	}
+	return o.Publish
+}
+
+func (s *ConfigServicePort) Update(v *ConfigServicePortUpdateInput) {
+	if v == nil {
+		return
+	}
+	if v.IsSetPort || v.Port != nil {
+		if v.Port != nil {
+			s.Port = *v.Port
+		}
+	}
+	if v.IsSetType || v.Type != nil {
+		if v.Type != nil {
+			s.Type = *v.Type
+		}
+	}
+	if v.IsSetPublish || v.Publish != nil {
+		s.Publish = v.Publish
+	}
+}
+
+type ConfigServicePortInsertInput struct {
+	Port    uint16 `json:"port,omitempty" toml:"port,omitempty"`
+	Type    string `json:"type,omitempty" toml:"type,omitempty"`
+	Publish *bool  `json:"publish,omitempty" toml:"publish,omitempty"`
+}
+
+func (o *ConfigServicePortInsertInput) GetPort() uint16 {
+	if o == nil {
+		o = &ConfigServicePortInsertInput{}
+	}
+	return o.Port
+}
+
+func (o *ConfigServicePortInsertInput) GetType() string {
+	if o == nil {
+		o = &ConfigServicePortInsertInput{}
+	}
+	return o.Type
+}
+
+func (o *ConfigServicePortInsertInput) GetPublish() *bool {
+	if o == nil {
+		o = &ConfigServicePortInsertInput{}
+	}
+	return o.Publish
+}
+
+func (s *ConfigServicePort) Insert(v *ConfigServicePortInsertInput) {
+	s.Port = v.Port
+	s.Type = v.Type
+	s.Publish = v.Publish
+}
+
+func (s *ConfigServicePort) Clone() *ConfigServicePort {
+	if s == nil {
+		return nil
+	}
+
+	v := &ConfigServicePort{}
+	v.Port = s.Port
+	v.Type = s.Type
+	v.Publish = s.Publish
+	return v
+}
+
+type ConfigServicePortComparisonExp struct {
+	And     []*ConfigServicePortComparisonExp `json:"_and,omitempty"`
+	Not     *ConfigServicePortComparisonExp   `json:"_not,omitempty"`
+	Or      []*ConfigServicePortComparisonExp `json:"_or,omitempty"`
+	Port    *ConfigPortComparisonExp          `json:"port,omitempty"`
+	Type    *ConfigStringComparisonExp        `json:"type,omitempty"`
+	Publish *ConfigBooleanComparisonExp       `json:"publish,omitempty"`
+}
+
+func (exp *ConfigServicePortComparisonExp) Matches(o *ConfigServicePort) bool {
+	if exp == nil {
+		return true
+	}
+
+	if o == nil {
+		o = &ConfigServicePort{}
+	}
+	if !exp.Port.Matches(o.Port) {
+		return false
+	}
+	if !exp.Type.Matches(o.Type) {
+		return false
+	}
+	if o.Publish != nil && !exp.Publish.Matches(*o.Publish) {
+		return false
+	}
+
+	if exp.And != nil && !all(exp.And, o) {
+		return false
+	}
+
+	if exp.Or != nil && !or(exp.Or, o) {
+		return false
+	}
+
+	if exp.Not != nil && exp.Not.Matches(o) {
+		return false
+	}
+
+	return true
+}
+
+// Resource configuration for a service
+type ConfigServiceResources struct {
+	Compute *ConfigServiceResourcesCompute `json:"compute,omitempty" toml:"compute,omitempty"`
+
+	Storage []*ConfigServiceResourcesStorage `json:"storage,omitempty" toml:"storage,omitempty"`
+	// Number of replicas for a service
+	Replicas uint8 `json:"replicas" toml:"replicas"`
+}
+
+func (o *ConfigServiceResources) MarshalJSON() ([]byte, error) {
+	m := make(map[string]any)
+	if o.Compute != nil {
+		m["compute"] = o.Compute
+	}
+	if o.Storage != nil {
+		m["storage"] = o.Storage
+	}
+	m["replicas"] = o.Replicas
+	return json.Marshal(m)
+}
+
+func (o *ConfigServiceResources) GetCompute() *ConfigServiceResourcesCompute {
+	if o == nil {
+		return nil
+	}
+	return o.Compute
+}
+
+func (o *ConfigServiceResources) GetStorage() []*ConfigServiceResourcesStorage {
+	if o == nil {
+		o = &ConfigServiceResources{}
+	}
+	return o.Storage
+}
+
+func (o *ConfigServiceResources) GetReplicas() uint8 {
+	if o == nil {
+		o = &ConfigServiceResources{}
+	}
+	return o.Replicas
+}
+
+type ConfigServiceResourcesUpdateInput struct {
+	Compute       *ConfigServiceResourcesComputeUpdateInput   `json:"compute,omitempty" toml:"compute,omitempty"`
+	IsSetCompute  bool                                        `json:"-"`
+	Storage       []*ConfigServiceResourcesStorageUpdateInput `json:"storage,omitempty" toml:"storage,omitempty"`
+	IsSetStorage  bool                                        `json:"-"`
+	Replicas      *uint8                                      `json:"replicas,omitempty" toml:"replicas,omitempty"`
+	IsSetReplicas bool                                        `json:"-"`
+}
+
+func (o *ConfigServiceResourcesUpdateInput) UnmarshalGQL(v interface{}) error {
+	m, ok := v.(map[string]any)
+	if !ok {
+		return fmt.Errorf("must be map[string]interface{}, got %T", v)
+	}
+	if x, ok := m["compute"]; ok {
+		if x != nil {
+			t := &ConfigServiceResourcesComputeUpdateInput{}
+			if err := t.UnmarshalGQL(x); err != nil {
+				return err
+			}
+			o.Compute = t
+		}
+		o.IsSetCompute = true
+	}
+	if v, ok := m["storage"]; ok {
+		if v != nil {
+			x, ok := v.([]interface{})
+			if !ok {
+				return fmt.Errorf("Storage must be []interface{}, got %T", v)
+			}
+
+			l := make([]*ConfigServiceResourcesStorageUpdateInput, len(x))
+			for i, vv := range x {
+				t := &ConfigServiceResourcesStorageUpdateInput{}
+				if err := t.UnmarshalGQL(vv); err != nil {
+					return err
+				}
+				l[i] = t
+			}
+			o.Storage = l
+		}
+		o.IsSetStorage = true
+	}
+	if v, ok := m["replicas"]; ok {
+		if v == nil {
+			o.Replicas = nil
+		} else {
+			// clearly a not very efficient shortcut
+			b, err := json.Marshal(v)
+			if err != nil {
+				return err
+			}
+			var x uint8
+			if err := json.Unmarshal(b, &x); err != nil {
+				return err
+			}
+			o.Replicas = &x
+		}
+		o.IsSetReplicas = true
+	}
+
+	return nil
+}
+
+func (o *ConfigServiceResourcesUpdateInput) MarshalGQL(w io.Writer) {
+	enc := json.NewEncoder(w)
+	if err := enc.Encode(o); err != nil {
+		panic(err)
+	}
+}
+
+func (o *ConfigServiceResourcesUpdateInput) GetCompute() *ConfigServiceResourcesComputeUpdateInput {
+	if o == nil {
+		return nil
+	}
+	return o.Compute
+}
+
+func (o *ConfigServiceResourcesUpdateInput) GetStorage() []*ConfigServiceResourcesStorageUpdateInput {
+	if o == nil {
+		o = &ConfigServiceResourcesUpdateInput{}
+	}
+	return o.Storage
+}
+
+func (o *ConfigServiceResourcesUpdateInput) GetReplicas() *uint8 {
+	if o == nil {
+		o = &ConfigServiceResourcesUpdateInput{}
+	}
+	return o.Replicas
+}
+
+func (s *ConfigServiceResources) Update(v *ConfigServiceResourcesUpdateInput) {
+	if v == nil {
+		return
+	}
+	if v.IsSetCompute || v.Compute != nil {
+		if v.Compute == nil {
+			s.Compute = nil
+		} else {
+			if s.Compute == nil {
+				s.Compute = &ConfigServiceResourcesCompute{}
+			}
+			s.Compute.Update(v.Compute)
+		}
+	}
+	if v.IsSetStorage || v.Storage != nil {
+		if v.Storage == nil {
+			s.Storage = nil
+		} else {
+			s.Storage = make([]*ConfigServiceResourcesStorage, len(v.Storage))
+			for i, e := range v.Storage {
+				v := &ConfigServiceResourcesStorage{}
+				v.Update(e)
+				s.Storage[i] = v
+			}
+		}
+	}
+	if v.IsSetReplicas || v.Replicas != nil {
+		if v.Replicas != nil {
+			s.Replicas = *v.Replicas
+		}
+	}
+}
+
+type ConfigServiceResourcesInsertInput struct {
+	Compute  *ConfigServiceResourcesComputeInsertInput   `json:"compute,omitempty" toml:"compute,omitempty"`
+	Storage  []*ConfigServiceResourcesStorageInsertInput `json:"storage,omitempty" toml:"storage,omitempty"`
+	Replicas uint8                                       `json:"replicas,omitempty" toml:"replicas,omitempty"`
+}
+
+func (o *ConfigServiceResourcesInsertInput) GetCompute() *ConfigServiceResourcesComputeInsertInput {
+	if o == nil {
+		return nil
+	}
+	return o.Compute
+}
+
+func (o *ConfigServiceResourcesInsertInput) GetStorage() []*ConfigServiceResourcesStorageInsertInput {
+	if o == nil {
+		o = &ConfigServiceResourcesInsertInput{}
+	}
+	return o.Storage
+}
+
+func (o *ConfigServiceResourcesInsertInput) GetReplicas() uint8 {
+	if o == nil {
+		o = &ConfigServiceResourcesInsertInput{}
+	}
+	return o.Replicas
+}
+
+func (s *ConfigServiceResources) Insert(v *ConfigServiceResourcesInsertInput) {
+	if v.Compute != nil {
+		if s.Compute == nil {
+			s.Compute = &ConfigServiceResourcesCompute{}
+		}
+		s.Compute.Insert(v.Compute)
+	}
+	if v.Storage != nil {
+		s.Storage = make([]*ConfigServiceResourcesStorage, len(v.Storage))
+		for i, e := range v.Storage {
+			v := &ConfigServiceResourcesStorage{}
+			v.Insert(e)
+			s.Storage[i] = v
+		}
+	}
+	s.Replicas = v.Replicas
+}
+
+func (s *ConfigServiceResources) Clone() *ConfigServiceResources {
+	if s == nil {
+		return nil
+	}
+
+	v := &ConfigServiceResources{}
+	v.Compute = s.Compute.Clone()
+	if s.Storage != nil {
+		v.Storage = make([]*ConfigServiceResourcesStorage, len(s.Storage))
+		for i, e := range s.Storage {
+			v.Storage[i] = e.Clone()
+		}
+	}
+	v.Replicas = s.Replicas
+	return v
+}
+
+type ConfigServiceResourcesComparisonExp struct {
+	And      []*ConfigServiceResourcesComparisonExp      `json:"_and,omitempty"`
+	Not      *ConfigServiceResourcesComparisonExp        `json:"_not,omitempty"`
+	Or       []*ConfigServiceResourcesComparisonExp      `json:"_or,omitempty"`
+	Compute  *ConfigServiceResourcesComputeComparisonExp `json:"compute,omitempty"`
+	Storage  *ConfigServiceResourcesStorageComparisonExp `json:"storage,omitempty"`
+	Replicas *ConfigUint8ComparisonExp                   `json:"replicas,omitempty"`
+}
+
+func (exp *ConfigServiceResourcesComparisonExp) Matches(o *ConfigServiceResources) bool {
+	if exp == nil {
+		return true
+	}
+
+	if o == nil {
+		o = &ConfigServiceResources{
+			Compute: &ConfigServiceResourcesCompute{},
+			Storage: []*ConfigServiceResourcesStorage{},
+		}
+	}
+	if !exp.Compute.Matches(o.Compute) {
+		return false
+	}
+	{
+		found := false
+		for _, o := range o.Storage {
+			if exp.Storage.Matches(o) {
+				found = true
+				break
+			}
+		}
+		if !found && exp.Storage != nil {
+			return false
+		}
+	}
+	if !exp.Replicas.Matches(o.Replicas) {
+		return false
+	}
+
+	if exp.And != nil && !all(exp.And, o) {
+		return false
+	}
+
+	if exp.Or != nil && !or(exp.Or, o) {
+		return false
+	}
+
+	if exp.Not != nil && exp.Not.Matches(o) {
+		return false
+	}
+
+	return true
+}
+
+type ConfigServiceResourcesCompute struct {
+	// milicpus, 1000 milicpus = 1 cpu
+	Cpu uint32 `json:"cpu" toml:"cpu"`
+	// MiB: 128MiB to 30GiB
+	Memory uint32 `json:"memory" toml:"memory"`
+}
+
+func (o *ConfigServiceResourcesCompute) MarshalJSON() ([]byte, error) {
+	m := make(map[string]any)
+	m["cpu"] = o.Cpu
+	m["memory"] = o.Memory
+	return json.Marshal(m)
+}
+
+func (o *ConfigServiceResourcesCompute) GetCpu() uint32 {
+	if o == nil {
+		o = &ConfigServiceResourcesCompute{}
+	}
+	return o.Cpu
+}
+
+func (o *ConfigServiceResourcesCompute) GetMemory() uint32 {
+	if o == nil {
+		o = &ConfigServiceResourcesCompute{}
+	}
+	return o.Memory
+}
+
+type ConfigServiceResourcesComputeUpdateInput struct {
+	Cpu         *uint32 `json:"cpu,omitempty" toml:"cpu,omitempty"`
+	IsSetCpu    bool    `json:"-"`
+	Memory      *uint32 `json:"memory,omitempty" toml:"memory,omitempty"`
+	IsSetMemory bool    `json:"-"`
+}
+
+func (o *ConfigServiceResourcesComputeUpdateInput) UnmarshalGQL(v interface{}) error {
+	m, ok := v.(map[string]any)
+	if !ok {
+		return fmt.Errorf("must be map[string]interface{}, got %T", v)
+	}
+	if v, ok := m["cpu"]; ok {
+		if v == nil {
+			o.Cpu = nil
+		} else {
+			// clearly a not very efficient shortcut
+			b, err := json.Marshal(v)
+			if err != nil {
+				return err
+			}
+			var x uint32
+			if err := json.Unmarshal(b, &x); err != nil {
+				return err
+			}
+			o.Cpu = &x
+		}
+		o.IsSetCpu = true
+	}
+	if v, ok := m["memory"]; ok {
+		if v == nil {
+			o.Memory = nil
+		} else {
+			// clearly a not very efficient shortcut
+			b, err := json.Marshal(v)
+			if err != nil {
+				return err
+			}
+			var x uint32
+			if err := json.Unmarshal(b, &x); err != nil {
+				return err
+			}
+			o.Memory = &x
+		}
+		o.IsSetMemory = true
+	}
+
+	return nil
+}
+
+func (o *ConfigServiceResourcesComputeUpdateInput) MarshalGQL(w io.Writer) {
+	enc := json.NewEncoder(w)
+	if err := enc.Encode(o); err != nil {
+		panic(err)
+	}
+}
+
+func (o *ConfigServiceResourcesComputeUpdateInput) GetCpu() *uint32 {
+	if o == nil {
+		o = &ConfigServiceResourcesComputeUpdateInput{}
+	}
+	return o.Cpu
+}
+
+func (o *ConfigServiceResourcesComputeUpdateInput) GetMemory() *uint32 {
+	if o == nil {
+		o = &ConfigServiceResourcesComputeUpdateInput{}
+	}
+	return o.Memory
+}
+
+func (s *ConfigServiceResourcesCompute) Update(v *ConfigServiceResourcesComputeUpdateInput) {
+	if v == nil {
+		return
+	}
+	if v.IsSetCpu || v.Cpu != nil {
+		if v.Cpu != nil {
+			s.Cpu = *v.Cpu
+		}
+	}
+	if v.IsSetMemory || v.Memory != nil {
+		if v.Memory != nil {
+			s.Memory = *v.Memory
+		}
+	}
+}
+
+type ConfigServiceResourcesComputeInsertInput struct {
+	Cpu    uint32 `json:"cpu,omitempty" toml:"cpu,omitempty"`
+	Memory uint32 `json:"memory,omitempty" toml:"memory,omitempty"`
+}
+
+func (o *ConfigServiceResourcesComputeInsertInput) GetCpu() uint32 {
+	if o == nil {
+		o = &ConfigServiceResourcesComputeInsertInput{}
+	}
+	return o.Cpu
+}
+
+func (o *ConfigServiceResourcesComputeInsertInput) GetMemory() uint32 {
+	if o == nil {
+		o = &ConfigServiceResourcesComputeInsertInput{}
+	}
+	return o.Memory
+}
+
+func (s *ConfigServiceResourcesCompute) Insert(v *ConfigServiceResourcesComputeInsertInput) {
+	s.Cpu = v.Cpu
+	s.Memory = v.Memory
+}
+
+func (s *ConfigServiceResourcesCompute) Clone() *ConfigServiceResourcesCompute {
+	if s == nil {
+		return nil
+	}
+
+	v := &ConfigServiceResourcesCompute{}
+	v.Cpu = s.Cpu
+	v.Memory = s.Memory
+	return v
+}
+
+type ConfigServiceResourcesComputeComparisonExp struct {
+	And    []*ConfigServiceResourcesComputeComparisonExp `json:"_and,omitempty"`
+	Not    *ConfigServiceResourcesComputeComparisonExp   `json:"_not,omitempty"`
+	Or     []*ConfigServiceResourcesComputeComparisonExp `json:"_or,omitempty"`
+	Cpu    *ConfigUint32ComparisonExp                    `json:"cpu,omitempty"`
+	Memory *ConfigUint32ComparisonExp                    `json:"memory,omitempty"`
+}
+
+func (exp *ConfigServiceResourcesComputeComparisonExp) Matches(o *ConfigServiceResourcesCompute) bool {
+	if exp == nil {
+		return true
+	}
+
+	if o == nil {
+		o = &ConfigServiceResourcesCompute{}
+	}
+	if !exp.Cpu.Matches(o.Cpu) {
+		return false
+	}
+	if !exp.Memory.Matches(o.Memory) {
+		return false
+	}
+
+	if exp.And != nil && !all(exp.And, o) {
+		return false
+	}
+
+	if exp.Or != nil && !or(exp.Or, o) {
+		return false
+	}
+
+	if exp.Not != nil && exp.Not.Matches(o) {
+		return false
+	}
+
+	return true
+}
+
+type ConfigServiceResourcesStorage struct {
+	// GiB
+	Capacity uint32 `json:"capacity" toml:"capacity"`
+
+	Path string `json:"path" toml:"path"`
+}
+
+func (o *ConfigServiceResourcesStorage) MarshalJSON() ([]byte, error) {
+	m := make(map[string]any)
+	m["capacity"] = o.Capacity
+	m["path"] = o.Path
+	return json.Marshal(m)
+}
+
+func (o *ConfigServiceResourcesStorage) GetCapacity() uint32 {
+	if o == nil {
+		o = &ConfigServiceResourcesStorage{}
+	}
+	return o.Capacity
+}
+
+func (o *ConfigServiceResourcesStorage) GetPath() string {
+	if o == nil {
+		o = &ConfigServiceResourcesStorage{}
+	}
+	return o.Path
+}
+
+type ConfigServiceResourcesStorageUpdateInput struct {
+	Capacity      *uint32 `json:"capacity,omitempty" toml:"capacity,omitempty"`
+	IsSetCapacity bool    `json:"-"`
+	Path          *string `json:"path,omitempty" toml:"path,omitempty"`
+	IsSetPath     bool    `json:"-"`
+}
+
+func (o *ConfigServiceResourcesStorageUpdateInput) UnmarshalGQL(v interface{}) error {
+	m, ok := v.(map[string]any)
+	if !ok {
+		return fmt.Errorf("must be map[string]interface{}, got %T", v)
+	}
+	if v, ok := m["capacity"]; ok {
+		if v == nil {
+			o.Capacity = nil
+		} else {
+			// clearly a not very efficient shortcut
+			b, err := json.Marshal(v)
+			if err != nil {
+				return err
+			}
+			var x uint32
+			if err := json.Unmarshal(b, &x); err != nil {
+				return err
+			}
+			o.Capacity = &x
+		}
+		o.IsSetCapacity = true
+	}
+	if v, ok := m["path"]; ok {
+		if v == nil {
+			o.Path = nil
+		} else {
+			// clearly a not very efficient shortcut
+			b, err := json.Marshal(v)
+			if err != nil {
+				return err
+			}
+			var x string
+			if err := json.Unmarshal(b, &x); err != nil {
+				return err
+			}
+			o.Path = &x
+		}
+		o.IsSetPath = true
+	}
+
+	return nil
+}
+
+func (o *ConfigServiceResourcesStorageUpdateInput) MarshalGQL(w io.Writer) {
+	enc := json.NewEncoder(w)
+	if err := enc.Encode(o); err != nil {
+		panic(err)
+	}
+}
+
+func (o *ConfigServiceResourcesStorageUpdateInput) GetCapacity() *uint32 {
+	if o == nil {
+		o = &ConfigServiceResourcesStorageUpdateInput{}
+	}
+	return o.Capacity
+}
+
+func (o *ConfigServiceResourcesStorageUpdateInput) GetPath() *string {
+	if o == nil {
+		o = &ConfigServiceResourcesStorageUpdateInput{}
+	}
+	return o.Path
+}
+
+func (s *ConfigServiceResourcesStorage) Update(v *ConfigServiceResourcesStorageUpdateInput) {
+	if v == nil {
+		return
+	}
+	if v.IsSetCapacity || v.Capacity != nil {
+		if v.Capacity != nil {
+			s.Capacity = *v.Capacity
+		}
+	}
+	if v.IsSetPath || v.Path != nil {
+		if v.Path != nil {
+			s.Path = *v.Path
+		}
+	}
+}
+
+type ConfigServiceResourcesStorageInsertInput struct {
+	Capacity uint32 `json:"capacity,omitempty" toml:"capacity,omitempty"`
+	Path     string `json:"path,omitempty" toml:"path,omitempty"`
+}
+
+func (o *ConfigServiceResourcesStorageInsertInput) GetCapacity() uint32 {
+	if o == nil {
+		o = &ConfigServiceResourcesStorageInsertInput{}
+	}
+	return o.Capacity
+}
+
+func (o *ConfigServiceResourcesStorageInsertInput) GetPath() string {
+	if o == nil {
+		o = &ConfigServiceResourcesStorageInsertInput{}
+	}
+	return o.Path
+}
+
+func (s *ConfigServiceResourcesStorage) Insert(v *ConfigServiceResourcesStorageInsertInput) {
+	s.Capacity = v.Capacity
+	s.Path = v.Path
+}
+
+func (s *ConfigServiceResourcesStorage) Clone() *ConfigServiceResourcesStorage {
+	if s == nil {
+		return nil
+	}
+
+	v := &ConfigServiceResourcesStorage{}
+	v.Capacity = s.Capacity
+	v.Path = s.Path
+	return v
+}
+
+type ConfigServiceResourcesStorageComparisonExp struct {
+	And      []*ConfigServiceResourcesStorageComparisonExp `json:"_and,omitempty"`
+	Not      *ConfigServiceResourcesStorageComparisonExp   `json:"_not,omitempty"`
+	Or       []*ConfigServiceResourcesStorageComparisonExp `json:"_or,omitempty"`
+	Capacity *ConfigUint32ComparisonExp                    `json:"capacity,omitempty"`
+	Path     *ConfigStringComparisonExp                    `json:"path,omitempty"`
+}
+
+func (exp *ConfigServiceResourcesStorageComparisonExp) Matches(o *ConfigServiceResourcesStorage) bool {
+	if exp == nil {
+		return true
+	}
+
+	if o == nil {
+		o = &ConfigServiceResourcesStorage{}
+	}
+	if !exp.Capacity.Matches(o.Capacity) {
+		return false
+	}
+	if !exp.Path.Matches(o.Path) {
+		return false
+	}
+
+	if exp.And != nil && !all(exp.And, o) {
+		return false
+	}
+
+	if exp.Or != nil && !or(exp.Or, o) {
+		return false
+	}
+
+	if exp.Not != nil && exp.Not.Matches(o) {
+		return false
+	}
+
+	return true
+}
+
 type ConfigSms struct {
 	Provider *string `json:"provider" toml:"provider"`
 
@@ -14278,8 +16253,6 @@ type ConfigSystemConfigPostgres struct {
 	Database string `json:"database" toml:"database"`
 
 	ConnectionString *ConfigSystemConfigPostgresConnectionString `json:"connectionString,omitempty" toml:"connectionString,omitempty"`
-
-	Password string `json:"password" toml:"password"`
 }
 
 func (o *ConfigSystemConfigPostgres) MarshalJSON() ([]byte, error) {
@@ -14291,7 +16264,6 @@ func (o *ConfigSystemConfigPostgres) MarshalJSON() ([]byte, error) {
 	if o.ConnectionString != nil {
 		m["connectionString"] = o.ConnectionString
 	}
-	m["password"] = o.Password
 	return json.Marshal(m)
 }
 
@@ -14316,13 +16288,6 @@ func (o *ConfigSystemConfigPostgres) GetConnectionString() *ConfigSystemConfigPo
 	return o.ConnectionString
 }
 
-func (o *ConfigSystemConfigPostgres) GetPassword() string {
-	if o == nil {
-		o = &ConfigSystemConfigPostgres{}
-	}
-	return o.Password
-}
-
 type ConfigSystemConfigPostgresUpdateInput struct {
 	Enabled               *bool                                                  `json:"enabled,omitempty" toml:"enabled,omitempty"`
 	IsSetEnabled          bool                                                   `json:"-"`
@@ -14330,8 +16295,6 @@ type ConfigSystemConfigPostgresUpdateInput struct {
 	IsSetDatabase         bool                                                   `json:"-"`
 	ConnectionString      *ConfigSystemConfigPostgresConnectionStringUpdateInput `json:"connectionString,omitempty" toml:"connectionString,omitempty"`
 	IsSetConnectionString bool                                                   `json:"-"`
-	Password              *string                                                `json:"password,omitempty" toml:"password,omitempty"`
-	IsSetPassword         bool                                                   `json:"-"`
 }
 
 func (o *ConfigSystemConfigPostgresUpdateInput) UnmarshalGQL(v interface{}) error {
@@ -14383,23 +16346,6 @@ func (o *ConfigSystemConfigPostgresUpdateInput) UnmarshalGQL(v interface{}) erro
 		}
 		o.IsSetConnectionString = true
 	}
-	if v, ok := m["password"]; ok {
-		if v == nil {
-			o.Password = nil
-		} else {
-			// clearly a not very efficient shortcut
-			b, err := json.Marshal(v)
-			if err != nil {
-				return err
-			}
-			var x string
-			if err := json.Unmarshal(b, &x); err != nil {
-				return err
-			}
-			o.Password = &x
-		}
-		o.IsSetPassword = true
-	}
 
 	return nil
 }
@@ -14432,13 +16378,6 @@ func (o *ConfigSystemConfigPostgresUpdateInput) GetConnectionString() *ConfigSys
 	return o.ConnectionString
 }
 
-func (o *ConfigSystemConfigPostgresUpdateInput) GetPassword() *string {
-	if o == nil {
-		o = &ConfigSystemConfigPostgresUpdateInput{}
-	}
-	return o.Password
-}
-
 func (s *ConfigSystemConfigPostgres) Update(v *ConfigSystemConfigPostgresUpdateInput) {
 	if v == nil {
 		return
@@ -14461,18 +16400,12 @@ func (s *ConfigSystemConfigPostgres) Update(v *ConfigSystemConfigPostgresUpdateI
 			s.ConnectionString.Update(v.ConnectionString)
 		}
 	}
-	if v.IsSetPassword || v.Password != nil {
-		if v.Password != nil {
-			s.Password = *v.Password
-		}
-	}
 }
 
 type ConfigSystemConfigPostgresInsertInput struct {
 	Enabled          *bool                                                  `json:"enabled,omitempty" toml:"enabled,omitempty"`
 	Database         string                                                 `json:"database,omitempty" toml:"database,omitempty"`
 	ConnectionString *ConfigSystemConfigPostgresConnectionStringInsertInput `json:"connectionString,omitempty" toml:"connectionString,omitempty"`
-	Password         string                                                 `json:"password,omitempty" toml:"password,omitempty"`
 }
 
 func (o *ConfigSystemConfigPostgresInsertInput) GetEnabled() *bool {
@@ -14496,13 +16429,6 @@ func (o *ConfigSystemConfigPostgresInsertInput) GetConnectionString() *ConfigSys
 	return o.ConnectionString
 }
 
-func (o *ConfigSystemConfigPostgresInsertInput) GetPassword() string {
-	if o == nil {
-		o = &ConfigSystemConfigPostgresInsertInput{}
-	}
-	return o.Password
-}
-
 func (s *ConfigSystemConfigPostgres) Insert(v *ConfigSystemConfigPostgresInsertInput) {
 	s.Enabled = v.Enabled
 	s.Database = v.Database
@@ -14512,7 +16438,6 @@ func (s *ConfigSystemConfigPostgres) Insert(v *ConfigSystemConfigPostgresInsertI
 		}
 		s.ConnectionString.Insert(v.ConnectionString)
 	}
-	s.Password = v.Password
 }
 
 func (s *ConfigSystemConfigPostgres) Clone() *ConfigSystemConfigPostgres {
@@ -14524,7 +16449,6 @@ func (s *ConfigSystemConfigPostgres) Clone() *ConfigSystemConfigPostgres {
 	v.Enabled = s.Enabled
 	v.Database = s.Database
 	v.ConnectionString = s.ConnectionString.Clone()
-	v.Password = s.Password
 	return v
 }
 
@@ -14535,7 +16459,6 @@ type ConfigSystemConfigPostgresComparisonExp struct {
 	Enabled          *ConfigBooleanComparisonExp                              `json:"enabled,omitempty"`
 	Database         *ConfigStringComparisonExp                               `json:"database,omitempty"`
 	ConnectionString *ConfigSystemConfigPostgresConnectionStringComparisonExp `json:"connectionString,omitempty"`
-	Password         *ConfigStringComparisonExp                               `json:"password,omitempty"`
 }
 
 func (exp *ConfigSystemConfigPostgresComparisonExp) Matches(o *ConfigSystemConfigPostgres) bool {
@@ -14555,9 +16478,6 @@ func (exp *ConfigSystemConfigPostgresComparisonExp) Matches(o *ConfigSystemConfi
 		return false
 	}
 	if !exp.ConnectionString.Matches(o.ConnectionString) {
-		return false
-	}
-	if !exp.Password.Matches(o.Password) {
 		return false
 	}
 

@@ -5,32 +5,33 @@ import (
 	"strings"
 )
 
-
 // main entrypoint to the configuration
 #Config: {
-    // Global configuration that applies to all services
-	global:        #Global
+	// Global configuration that applies to all services
+	global: #Global
 
-    // Configuration for hasura
-	hasura:        #Hasura
+	// Configuration for hasura
+	hasura: #Hasura
 
-    // Configuration for functions service
-	functions:     #Functions
+	// Configuration for functions service
+	functions: #Functions
 
-    // Configuration for auth service
-	auth:          #Auth
+	// Configuration for auth service
+	auth: #Auth
 
-    // Configuration for postgres service
-	postgres:      #Postgres
+	// Configuration for postgres service
+	postgres: #Postgres
 
-    // Configuration for third party providers like SMTP, SMS, etc.
-	provider:      #Provider
+	// Configuration for third party providers like SMTP, SMS, etc.
+	provider: #Provider
 
-    // Configuration for storage service
-	storage:       #Storage
+	// Configuration for storage service
+	storage: #Storage
 
-    // Configuration for observability service
+	// Configuration for observability service
 	observability: #Observability
+
+	services: [...#Service] | *[]
 
 	_totalResourcesCPU: (
 				hasura.resources.replicas*hasura.resources.compute.cpu +
@@ -67,9 +68,9 @@ import (
 }
 
 #EnvironmentVariable: {
-    // Name of the environment variable
-	name:  =~"(?i)^[a-z_]{1,}[a-z0-9_]*" & !~"(?i)^NHOST_" & !~"(?i)^HASURA_"
-    // Value of the environment variable
+	// Name of the environment variable
+	name: =~"(?i)^[a-z_]{1,}[a-z0-9_]*" & !~"(?i)^NHOST_" & !~"(?i)^HASURA_"
+	// Value of the environment variable
 	value: string
 }
 
@@ -88,7 +89,7 @@ import (
 		_validateMemorySteps128: (mod(memory, 128) == 0) & true @cuegraph(skip)
 	}
 
-    // Number of replicas for a service
+	// Number of replicas for a service
 	replicas: uint8 & >=1 & <=10
 
 	_validateMultipleReplicasRatioMustBe1For2: (
@@ -98,65 +99,64 @@ import (
 
 // Configuration for hasura service
 #Hasura: {
-    // Version of hasura, you can see available versions in the URL below:
-    // https://hub.docker.com/r/hasura/graphql-engine/tags
+	// Version of hasura, you can see available versions in the URL below:
+	// https://hub.docker.com/r/hasura/graphql-engine/tags
 	version: string | *"v2.25.1-ce"
 
-    // JWT Secrets configuration
+	// JWT Secrets configuration
 	jwtSecrets: [#JWTSecret]
 
-    // Admin secret
-	adminSecret:   string
+	// Admin secret
+	adminSecret: string
 
-    // Webhook secret
+	// Webhook secret
 	webhookSecret: string
 
-    // Configuration for hasura services
-    // Reference: https://hasura.io/docs/latest/deployment/graphql-engine-flags/reference/
+	// Configuration for hasura services
+	// Reference: https://hasura.io/docs/latest/deployment/graphql-engine-flags/reference/
 	settings: {
-        // HASURA_GRAPHQL_CORS_DOMAIN
-		corsDomain:                    [...#Url] | *["*"]
-        // HASURA_GRAPHQL_DEV_MODE
-		devMode:                       bool | *true
-        // HASURA_GRAPHQL_ENABLE_ALLOWLIST
-		enableAllowList:               bool | *false
-        // HASURA_GRAPHQL_ENABLE_CONSOLE
-		enableConsole:                 bool | *true
-        // HASURA_GRAPHQL_ENABLE_REMOTE_SCHEMA_PERMISSIONS
+		// HASURA_GRAPHQL_CORS_DOMAIN
+		corsDomain: [...#Url] | *["*"]
+		// HASURA_GRAPHQL_DEV_MODE
+		devMode: bool | *true
+		// HASURA_GRAPHQL_ENABLE_ALLOWLIST
+		enableAllowList: bool | *false
+		// HASURA_GRAPHQL_ENABLE_CONSOLE
+		enableConsole: bool | *true
+		// HASURA_GRAPHQL_ENABLE_REMOTE_SCHEMA_PERMISSIONS
 		enableRemoteSchemaPermissions: bool | *false
-        // HASURA_GRAPHQL_ENABLED_APIS
-		enabledAPIs:                   [...#HasuraAPIs] | *["metadata", "graphql", "pgdump", "config"]
+		// HASURA_GRAPHQL_ENABLED_APIS
+		enabledAPIs: [...#HasuraAPIs] | *["metadata", "graphql", "pgdump", "config"]
 	}
 
 	logs: {
-        // HASURA_GRAPHQL_LOG_LEVEL
+		// HASURA_GRAPHQL_LOG_LEVEL
 		level: "debug" | "info" | "error" | *"warn"
 	}
 
 	events: {
-        // HASURA_GRAPHQL_EVENTS_HTTP_POOL_SIZE
+		// HASURA_GRAPHQL_EVENTS_HTTP_POOL_SIZE
 		httpPoolSize: uint32 & >=1 & <=100 | *100
 	}
 
-    // Resources for the service
+	// Resources for the service
 	resources?: #Resources
 }
 
 // APIs for hasura
 #HasuraAPIs: "metadata" | "graphql" | "pgdump" | "config"
 
-
 // Configuration for storage service
 #Storage: {
-    // Version of storage service, you can see available versions in the URL below:
-    // https://hub.docker.com/r/nhost/hasura-storage/tags
-    //
-    // Releases:
-    //
-    // https://github.com/nhost/hasura-storage/releases
-	version:    string | *"0.3.5"
+	// Version of storage service, you can see available versions in the URL below:
+	// https://hub.docker.com/r/nhost/hasura-storage/tags
+	//
+	// Releases:
+	//
+	// https://github.com/nhost/hasura-storage/releases
+	version: string | *"0.3.5"
 
-    // Resources for the service
+	// Resources for the service
 	resources?: #Resources
 }
 
@@ -169,11 +169,11 @@ import (
 
 // Configuration for postgres service
 #Postgres: {
-    // Version of postgres, you can see available versions in the URL below:
-    // https://hub.docker.com/r/nhost/postgres/tags
+	// Version of postgres, you can see available versions in the URL below:
+	// https://hub.docker.com/r/nhost/postgres/tags
 	version: string | *"14.6-20230406-2"
 
-    // Resources for the service
+	// Resources for the service
 	resources?: #Resources & {
 		replicas: 1
 	}
@@ -183,71 +183,71 @@ import (
 // You can find more information about the configuration here:
 // https://github.com/nhost/hasura-auth/blob/main/docs/environment-variables.md
 #Auth: {
-    // Version of auth, you can see available versions in the URL below:
-    // https://hub.docker.com/r/nhost/hasura-auth/tags
-    //
-    // Releases:
-    //
-    // https://github.com/nhost/hasura-auth/releases
+	// Version of auth, you can see available versions in the URL below:
+	// https://hub.docker.com/r/nhost/hasura-auth/tags
+	//
+	// Releases:
+	//
+	// https://github.com/nhost/hasura-auth/releases
 	version: string | *"0.20.1"
 
-    // Resources for the service
+	// Resources for the service
 	resources?: #Resources
 
 	redirections: {
-        // AUTH_CLIENT_URL
+		// AUTH_CLIENT_URL
 		clientUrl: #Url | *"http://localhost:3000"
-        // AUTH_ACCESS_CONTROL_ALLOWED_REDIRECT_URLS
+		// AUTH_ACCESS_CONTROL_ALLOWED_REDIRECT_URLS
 		allowedUrls: [...string]
 	}
 
 	signUp: {
-        // Inverse of AUTH_DISABLE_NEW_USERS
+		// Inverse of AUTH_DISABLE_NEW_USERS
 		enabled: bool | *true
 	}
 
 	user: {
 		roles: {
-            // AUTH_USER_DEFAULT_ROLE
+			// AUTH_USER_DEFAULT_ROLE
 			default: #UserRole | *"user"
-            // AUTH_USER_DEFAULT_ALLOWED_ROLES
+			// AUTH_USER_DEFAULT_ALLOWED_ROLES
 			allowed: [ ...#UserRole] | *[default, "me"]
 		}
 		locale: {
-            // AUTH_LOCALE_DEFAULT
+			// AUTH_LOCALE_DEFAULT
 			default: #Locale | *"en"
-            // AUTH_LOCALE_ALLOWED_LOCALES
+			// AUTH_LOCALE_ALLOWED_LOCALES
 			allowed: [...#Locale] | *[default]
 		}
 
 		gravatar: {
-            // AUTH_GRAVATAR_ENABLED
+			// AUTH_GRAVATAR_ENABLED
 			enabled: bool | *true
-            // AUTH_GRAVATAR_DEFAULT
+			// AUTH_GRAVATAR_DEFAULT
 			default: "404" | "mp" | "identicon" | "monsterid" | "wavatar" | "retro" | "robohash" | *"blank"
-            // AUTH_GRAVATAR_RATING
-			rating:  "pg" | "r" | "x" | *"g"
+			// AUTH_GRAVATAR_RATING
+			rating: "pg" | "r" | "x" | *"g"
 		}
 		email: {
-            // AUTH_ACCESS_CONTROL_ALLOWED_EMAILS
+			// AUTH_ACCESS_CONTROL_ALLOWED_EMAILS
 			allowed: [...#Email]
-            // AUTH_ACCESS_CONTROL_BLOCKED_EMAILS
+			// AUTH_ACCESS_CONTROL_BLOCKED_EMAILS
 			blocked: [...#Email]
 
 		}
 		emailDomains: {
-            // AUTH_ACCESS_CONTROL_ALLOWED_EMAIL_DOMAINS
+			// AUTH_ACCESS_CONTROL_ALLOWED_EMAIL_DOMAINS
 			allowed: [...string & net.FQDN]
-            // AUTH_ACCESS_CONTROL_BLOCKED_EMAIL_DOMAINS
+			// AUTH_ACCESS_CONTROL_BLOCKED_EMAIL_DOMAINS
 			blocked: [...string & net.FQDN]
 		}
 	}
 
 	session: {
 		accessToken: {
-            // AUTH_ACCESS_TOKEN_EXPIRES_IN
-			expiresIn:    uint32 | *900
-            // AUTH_JWT_CUSTOM_CLAIMS
+			// AUTH_ACCESS_TOKEN_EXPIRES_IN
+			expiresIn: uint32 | *900
+			// AUTH_JWT_CUSTOM_CLAIMS
 			customClaims: [...{
 				key:   =~"[a-zA-Z_]{1,}[a-zA-Z0-9_]*"
 				value: string
@@ -255,7 +255,7 @@ import (
 		}
 
 		refreshToken: {
-            // AUTH_REFRESH_TOKEN_EXPIRES_IN
+			// AUTH_REFRESH_TOKEN_EXPIRES_IN
 			expiresIn: uint32 | *43200
 		}
 
@@ -468,11 +468,9 @@ import (
 		enabled: bool | *true
 		if enabled {
 			database: string
-			password: string
 		}
 		if !enabled {
 			database?: string
-			password?: string
 		}
 		connectionString: {
 			backup:  string
@@ -489,4 +487,58 @@ import (
 
 #Grafana: {
 	adminPassword: string
+}
+
+#ServicePort: {
+	port:                              #Port
+	type:                              "http" | "tcp" | "udp"
+	publish:                           bool | *false
+	_publish_supported_only_over_http: (
+						publish == false || type == "http" ) & true @cuegraph(skip)
+}
+
+// Resource configuration for a service
+#ServiceResources: {
+	compute: {
+		// milicpus, 1000 milicpus = 1 cpu
+		cpu: uint32 & >=250 & <=15000
+		// MiB: 128MiB to 30GiB
+		memory: uint32 & >=128 & <=30720
+
+		// validate CPU steps of 250 milicpus
+		_validateCPUSteps250: (mod(cpu, 250) == 0) & true @cuegraph(skip)
+
+		// validate memory steps of 128 MiB
+		_validateMemorySteps128: (mod(memory, 128) == 0) & true @cuegraph(skip)
+	}
+
+	storage: [...{
+		capacity: uint32 & >=1 & <=1000 // GiB
+		path:     string
+	}] | *[]
+
+	// Number of replicas for a service
+	replicas: uint8 & >=1 & <=10
+
+	_validateMultipleReplicasRatioMustBe1For2: (
+							replicas == 1 |
+		(compute.cpu*2.048 == compute.memory)) & true @cuegraph(skip)
+}
+
+#ServiceBuild: {
+	buildCommand: [...string] | *[]
+	runtime:      "nodejs" | "python" | "go"
+}
+
+#ServiceImage: {
+	image: string
+}
+
+#Service: {
+	name:        string
+	image:       { #ServiceImage | #ServiceBuild }
+	command:     [...string] | *[]
+	environment: [...#EnvironmentVariable] | *[]
+	ports?:      [...#ServicePort] | *[]
+	resources:   #ServiceResources
 }

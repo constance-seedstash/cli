@@ -11,6 +11,7 @@ import (
 	"github.com/nhost/cli/cmd/dev"
 	"github.com/nhost/cli/cmd/project"
 	"github.com/nhost/cli/cmd/secrets"
+	"github.com/nhost/cli/cmd/services"
 	"github.com/nhost/cli/cmd/software"
 	"github.com/nhost/cli/cmd/user"
 	"github.com/urfave/cli/v2"
@@ -39,6 +40,7 @@ func main() {
 			project.CommandList(),
 			project.CommandLink(),
 			secrets.Command(),
+			services.Command(),
 			software.Command(),
 			user.CommandLogin(),
 		},

@@ -26,3 +26,10 @@ build:  ## Build application and places the binary under ./result/bin
 get-version:  ## Return version
 	@echo $(VERSION) > VERSION
 	@echo $(VERSION)
+
+
+.PHONY: builders
+builders:
+	docker build \
+		-f ./services/builder/docker/Dockerfile \
+		-t builders:latest .
