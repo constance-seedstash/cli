@@ -5,8 +5,7 @@ cp -r /app /tmp/app
 cd /tmp/app
 
 echo $NIX_FLAKES | base64 -d > flake.nix
-cat flake.nix
-git add .
+cp /tmp/builder/flake.lock /app/flake.lock
 
 nix build \
     $NIX_OPTIONS \

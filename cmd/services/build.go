@@ -2,6 +2,7 @@ package services
 
 import (
 	"fmt"
+	"path/filepath"
 
 	"github.com/go-git/go-git/v5"
 	"github.com/nhost/cli/clienv"
@@ -10,9 +11,9 @@ import (
 )
 
 const (
-	flagConfigFolder = "config-folder"
-	flagRootFolder   = "root-folder"
-	flagVersion      = "version"
+	flagServiceFolder = "service-folder"
+	flagRootFolder    = "root-folder"
+	flagVersion       = "version"
 )
 
 func CommandBuild() *cli.Command {
@@ -28,8 +29,8 @@ func CommandBuild() *cli.Command {
 		Action:  commandBuild,
 		Flags: []cli.Flag{
 			&cli.StringFlag{ //nolint:exhaustruct
-				Name:    flagConfigFolder,
-				Usage:   "Path to the folder where the service configuration is located",
+				Name:    flagServiceFolder,
+				Usage:   "Path to the folder where the service is located",
 				EnvVars: []string{"NHOST_SERVICE_CONFIG_FOLDER"},
 				Value:   ".",
 			},
@@ -69,8 +70,17 @@ func getRootFolder(path string) (string, error) {
 func commandBuild(cCtx *cli.Context) error {
 	ce := clienv.FromCLI(cCtx)
 
-	cfgFolder := cCtx.String(flagConfigFolder)
+	cfgFolder := cCtx.String(flagServiceFolder)
+	cfgFolder, err := filepath.Abs(cfgFolder)
+	if err != nil {
+		return fmt.Errorf("could not get absolute path of config folder: %w", err)
+	}
+
 	rootFolder := cCtx.String(flagRootFolder)
+	rootFolder, err = filepath.Abs(rootFolder)
+	if err != nil {
+		return fmt.Errorf("could not get absolute path of root folder: %w", err)
+	}
 
 	ce.Infoln("Building service at %s with rootFolder %s", cfgFolder, rootFolder)
 

@@ -1,0 +1,42 @@
+Arguments: 
+  /nix/store/vir764fqhaq6dl1hrgqdyygwkv0bcn9f-nodejs-18.16.0/bin/node /nix/store/1b96i48i6k1ciq627p8dasc5blqd6i7c-yarn-1.22.19/bin/yarn --cwd backend/svc2 start
+
+PATH: 
+  /nix/store/h2r0ivj6r22nbiaxak9lqgcx7pa69p9f-clang-wrapper-11.1.0/bin:/nix/store/h4x6x3m1cy2j79c55ysml04sjzmrl0fc-clang-11.1.0/bin:/nix/store/p5kwl9j2y6adxzwl4vcj29b46a4sy84s-coreutils-9.3/bin:/nix/store/28ydnrhrnri2ksnc2hvf4w90qb8x8h2v-cctools-binutils-darwin-wrapper-973.0.1/bin:/nix/store/1jlhpilg6l44sgffmgpd6g3kjr06chf5-cctools-binutils-darwin-973.0.1/bin:/nix/store/c3aql875v2rxmxgc7ii27rk3w6gzzsy3-goreleaser-1.18.2/bin:/nix/store/ippmrr0ji9lbw6666p9g3agv2i3vb657-golangci-lint-1.52.2/bin:/nix/store/r86x8xh9bgj9lryh0nfcpwjd86fa9rsm-gofumpt-0.3.1/bin:/nix/store/c42f89inhlnx7llch9g6y50lrfjq444l-golines/bin:/nix/store/grvddn217cd5lg8k26hgwzvaryv7pnr8-gqlgenc-0.13.5/bin:/nix/store/kwk85pvzmyzz66q7lv366224yflvxx14-govulncheck/bin:/nix/store/zv697gi0zaia8qssqa135g5jbm7s7br1-richgo-0.3.12/bin:/nix/store/znr2dhisr9crhfa17rjcn50r0nsrnpfg-go-1.20.5/bin:/nix/store/ddvyc06w7236z7vnlw1d8c1hwmdp7zn3-nodejs-slim-18.16.0/bin:/nix/store/vmc069b9anmd3p7ygw5b81mkwv5x6xd7-npm-9.7.1/bin:/nix/store/vvxgzic9pbpcwjvh7l650m2pb1czdv38-pnpm-8.6.2/bin:/nix/store/1b96i48i6k1ciq627p8dasc5blqd6i7c-yarn-1.22.19/bin:/nix/store/6g7n5y5j70fnyja3kw79grf6sd6ny8ci-xcodebuild-0.1.2-pre/bin:/nix/store/j4fxv97xlk2v1083w3kwdg2j77s15p7j-Toolchains/XcodeDefault.xctoolchain/bin:/nix/store/p5kwl9j2y6adxzwl4vcj29b46a4sy84s-coreutils-9.3/bin:/nix/store/dgmnirq7n38q3h8zy5sg07wxbh381w01-findutils-4.9.0/bin:/nix/store/vv27rxw2yxnsjxkg7xki9sr0bprgdhag-diffutils-3.10/bin:/nix/store/h9jsr9fvpdzdjqx6v4gpm4jx0r4qc8ir-gnused-4.9/bin:/nix/store/jr9skh9dx1a37qhmncsbrjyihmrm6f0x-gnugrep-3.11/bin:/nix/store/nzsmafdqy8y0iw2iy9nsbzx5k2rvc2c6-gawk-5.2.2/bin:/nix/store/dlmvg1bfqg584jkyq85c5f9fh15kx3nl-gnutar-1.34/bin:/nix/store/ri8hcxfp6y5zcph91wjqfccp8cp33na9-gzip-1.12/bin:/nix/store/7i0sb4069cg7lacy2y00llmvjfw4ly7w-bzip2-1.0.8-bin/bin:/nix/store/3yg003njx09z7mnyq7kvr7l6knn8dks8-gnumake-4.4.1/bin:/nix/store/ag6lcqchlfb3nsn71slrdr9c60a4gf88-bash-5.2-p15/bin:/nix/store/2zhrm2w831zhyl5g8cwf5hy128fa2r64-patch-2.7.6/bin:/nix/store/80j4i3i0rv7qfmh4xabjs6vnp5r5zxs0-xz-5.4.3-bin/bin:/nix/store/79fmnqszwml8pirwkmxcx34zi1cxzaw0-file-5.44/bin:/opt/homebrew/bin:/opt/homebrew/sbin:/Users/dbarroso/.nix-profile/bin:/etc/profiles/per-user/dbarroso/bin:/run/current-system/sw/bin:/nix/var/nix/profiles/default/bin:/usr/local/bin:/usr/bin:/usr/sbin:/bin:/sbin:/Users/dbarroso/.config/zsh/plugins/enhancd:/Users/dbarroso/.config/zsh/plugins/devshell-inputs-completion:/Users/dbarroso/.local/bin:/Users/dbarroso/.local/bin
+
+Yarn version: 
+  1.22.19
+
+Node version: 
+  18.16.0
+
+Platform: 
+  darwin arm64
+
+Trace: 
+  SyntaxError: /Users/dbarroso/workspace/nhost/cli/services/builder/testdata/yarn-monorepo/backend/svc2/package.json: Unexpected token } in JSON at position 181
+      at JSON.parse (<anonymous>)
+      at /nix/store/1b96i48i6k1ciq627p8dasc5blqd6i7c-yarn-1.22.19/libexec/yarn/lib/cli.js:1629:59
+      at Generator.next (<anonymous>)
+      at step (/nix/store/1b96i48i6k1ciq627p8dasc5blqd6i7c-yarn-1.22.19/libexec/yarn/lib/cli.js:310:30)
+      at /nix/store/1b96i48i6k1ciq627p8dasc5blqd6i7c-yarn-1.22.19/libexec/yarn/lib/cli.js:321:13
+
+npm manifest: 
+  {
+    "name": "svc2",
+    "version": "1.0.0",
+    "main": "index.js",
+    "license": "MIT",
+    "scripts": {
+      "start": "node index.js"
+    },
+    "dependencies": {
+      "express": "^4.18.2",
+    }
+  }
+
+yarn manifest: 
+  No manifest
+
+Lockfile: 
+  No lockfile

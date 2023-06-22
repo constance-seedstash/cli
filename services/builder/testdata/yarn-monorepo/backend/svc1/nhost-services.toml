@@ -1,8 +1,16 @@
 [[ services ]]
-name = "node-yarn"
+name = "yarn-monorepo-backend-svc1"
 
 [services.image]
 runtime ="nodejs"
+files = [
+    "package.json",
+    "yarn.lock",
+    "backend/svc1/package.json",
+    "backend/svc1/**.js",
+    "packages/lib/package.json",
+    "packages/lib/**.js",
+]
 
 [[services.environment]]
 name = "NODE_ENV"

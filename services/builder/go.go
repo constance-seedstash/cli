@@ -3,7 +3,6 @@ package builder
 import (
 	"context"
 	"encoding/base64"
-	"encoding/json"
 	"fmt"
 	"os"
 	"os/exec"
@@ -13,13 +12,10 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/Masterminds/semver/v3"
 	"github.com/nhost/be/services/mimir/model"
 )
 
-const defaultNodeversion = "18"
-
-const nodeTemplate = `{
+const goTemplate = `{
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
     nix-filter.url = "github:numtide/nix-filter";
@@ -37,25 +33,16 @@ const nodeTemplate = `{
         pkgs = import nixpkgs {
           inherit system;
           overlays = [
-            (final: prev: {
-                {{ if eq .NodeVersion "18" }}
-                nodejs-version = final.nodejs_18;
-                {{ else if eq .NodeVersion "20" }}
-                nodejs-version = final.nodejs_20;
-                {{ end }}
-            })
+            (final: prev: { })
           ];
 
         };
 
         buildInputs = with pkgs; [
-          nodejs-version
-          nodePackages.npm
-          nodePackages.pnpm
-          yarn
         ];
 
         nativeBuildInputs = with pkgs; [
+          go
         ];
 
         matchRegex = regex:
@@ -65,10 +52,10 @@ const nodeTemplate = `{
       {
         packages = flake-utils.lib.flattenTree
           rec {
-            node_modules = pkgs.stdenv.mkDerivation {
+            vendor = pkgs.stdenv.mkDerivation {
               inherit version buildInputs nativeBuildInputs;
 
-              name = "${name}-node_modules";
+              name = "${name}-vendor";
               src = nix-filter.lib.filter {
                 root = ./.;
                 include = with nix-filter.lib;[
@@ -78,30 +65,17 @@ const nodeTemplate = `{
                 ];
               };
 
-              {{range .Env}}
-              {{.Name}} = "{{.Value}}";
-              {{end}}
-
               buildPhase = ''
                 runHook preBuild
 
-                export PREV_PWD=$(pwd)
-                export HOME=$(pwd)
+                find -type d -name vendor | grep vendor
+                if [ $? -neq 0 ]; then
+                  export PREV_PWD=$(pwd)
+                  cd ${servicePath}
+                  export HOME=$(pwd)
 
-                find .
-
-                if [ -f package-lock.json ]; then
-                    cd ${servicePath}
-                    npm ci --frozen-lockfile
-                elif [ -f yarn.lock ]; then
-                    cd ${servicePath}
-                    yarn install --frozen-lockfile
-                else
-                    echo "No lockfile found."
-                    exit 1
+                  go mod vendor
                 fi
-
-                cd $PREV_PWD
 
                 runHook postBuild
               '';
@@ -138,8 +112,12 @@ const nodeTemplate = `{
               buildPhase = ''
                 runHook preBuild
 
+                export PREV_PWD=$(pwd)
+                cd ${servicePath}
                 export HOME=$(pwd)
                 ${buildCmd}
+
+                cd $PREV_PWD
 
                 runHook postBuild
               '';
@@ -148,7 +126,7 @@ const nodeTemplate = `{
 
                 mkdir -p $out/app
                 cp -r * $out/app/
-                cp -r ${node_modules}/node_modules $out/app/node_modules
+                cp -r ${node_modules}/node_modules $out/app/${servicePath}/node_modules
 
                 runHook postInstall
               '';
@@ -161,12 +139,11 @@ const nodeTemplate = `{
 
               contents = with pkgs; [
                 cacert
-                busybox
                 nodeapp
               ] ++ buildInputs;
 
               config = {
-                workingDir = "/app";
+                workingDir = "/app/${servicePath}";
               };
             };
           };
@@ -175,62 +152,20 @@ const nodeTemplate = `{
 }
 `
 
-func discoverNodeVersion(paths ...string) (string, error) {
-	var packageJSON struct {
-		Engines struct {
-			Node string `json:"node"`
-		} `json:"engines"`
-	}
-	for _, path := range paths {
-		f, err := os.Open(filepath.Join(path, "package.json"))
-		switch {
-		case os.IsNotExist(err):
-			continue
-		case err != nil:
-			return "", fmt.Errorf("could not open package.json: %w", err)
-		}
-		defer f.Close()
-
-		if err := json.NewDecoder(f).Decode(&packageJSON); err != nil {
-			return "", fmt.Errorf("could not decode package.json: %w", err)
-		}
-
-		if packageJSON.Engines.Node != "" {
-			c, err := semver.NewConstraint(packageJSON.Engines.Node)
-			if err != nil {
-				return "", fmt.Errorf("could not parse node version: %w", err)
-			}
-			switch {
-			case c.Check(semver.MustParse("18.16.0")):
-				return "18", nil
-			case c.Check(semver.MustParse("20.2.0")):
-				return "20", nil
-			default:
-				return "", fmt.Errorf("unsupported node version: %s", packageJSON.Engines.Node)
-			}
-		}
-	}
-
-	return defaultNodeversion, nil
-}
-
-func getNodeDependencyFiles(paths []string, cfgFolder string) []string {
+func getGoDependencyFiles(paths []string, cfgFolder string) []string {
 	res := make([]string, 0, len(paths))
 	if len(paths) == 0 {
 		return []string{
-			"package.json",
-			"package-lock.json",
-			"yarn.lock",
-			path.Join(cfgFolder, "package.json"),
-			path.Join(cfgFolder, "package-lock.json"),
-			path.Join(cfgFolder, "yarn.lock"),
+			path.Join(cfgFolder, "go.mod"),
+			path.Join(cfgFolder, "go.sum"),
+			path.Join(cfgFolder, "vendor"),
 		}
 	}
 
 	for _, p := range paths {
-		if strings.Contains(p, "package.json") ||
-			strings.Contains(p, "package-lock.json") ||
-			strings.Contains(p, "yarn.lock") {
+		if strings.Contains(p, "go.mod") ||
+			strings.Contains(p, "go.sum") ||
+			strings.Contains(p, "vendor") {
 			re := regexp.MustCompile(`\*{1,2}`)
 			p = strings.ReplaceAll(p, ".", "\\.")
 			res = append(res, re.ReplaceAllString(p, `.*`))
@@ -240,7 +175,7 @@ func getNodeDependencyFiles(paths []string, cfgFolder string) []string {
 	return res
 }
 
-func buildNode(
+func buildGo(
 	ctx context.Context,
 	cfgFolder,
 	rootFolder string,
@@ -252,11 +187,6 @@ func buildNode(
 	nodeVersion, err := discoverNodeVersion(cfgFolder, rootFolder)
 	if err != nil {
 		return err
-	}
-
-	relPath, err := filepath.Rel(rootFolder, cfgFolder)
-	if err != nil {
-		return fmt.Errorf("could not get relative path: %w", err)
 	}
 
 	data := struct {
@@ -271,12 +201,12 @@ func buildNode(
 	}{
 		Name:            service.Name,
 		Version:         version,
-		ServicePath:     relPath,
+		ServicePath:     cfgFolder,
 		BuildCmd:        strings.Join(service.GetImage().BuildCommand, " "),
 		NodeVersion:     nodeVersion,
 		Env:             service.GetEnvironment(),
-		Paths:           getPaths(service.GetImage().GetFiles(), relPath),
-		DependencyFiles: getNodeDependencyFiles(service.GetImage().GetFiles(), relPath),
+		Paths:           getPaths(service.GetImage().GetFiles(), cfgFolder),
+		DependencyFiles: getGoDependencyFiles(service.GetImage().GetFiles(), cfgFolder),
 	}
 
 	strbuilder := &strings.Builder{}

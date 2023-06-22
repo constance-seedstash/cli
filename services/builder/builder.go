@@ -5,7 +5,10 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path"
 	"path/filepath"
+	"regexp"
+	"strings"
 
 	"github.com/nhost/be/services/mimir/model"
 	"github.com/nhost/be/services/mimir/schema"
@@ -72,11 +75,30 @@ func Build(ctx context.Context, cfgFolder, rootFolder string, version string, ce
 		case "python":
 			ce.Infoln("Python")
 		case "go":
-			ce.Infoln("Go")
+			if err := buildGo(ctx, cfgFolder, rootFolder, s, version); err != nil {
+				return err
+			}
 		default:
 			ce.Infoln("Unknown")
 		}
 	}
 
 	return nil
+}
+
+func getPaths(paths []string, svcPath string) []string {
+	res := make([]string, len(paths))
+	if len(paths) == 0 {
+		return []string{
+			path.Join(svcPath, ".*\\.js"),
+		}
+	}
+
+	for i, p := range paths {
+		re := regexp.MustCompile(`\*{1,2}`)
+		p = strings.ReplaceAll(p, ".", "\\.")
+		res[i] = re.ReplaceAllString(p, `.*`)
+	}
+
+	return res
 }
