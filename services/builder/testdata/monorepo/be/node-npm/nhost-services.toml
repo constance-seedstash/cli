@@ -4,7 +4,6 @@ name = "node-npm"
 [services.image]
 runtime ="nodejs"
 files = [
-    # (matchRegex "^.*common/lib/.*\.js$")
     "services/builder/testdata/monorepo/be/node-npm/package.json",
     "services/builder/testdata/monorepo/be/node-npm/package-lock.json",
     "services/builder/testdata/monorepo/be/node-npm/**.js",

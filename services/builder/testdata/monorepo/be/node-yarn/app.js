@@ -1,10 +1,9 @@
 const express = require('express')
-const { HELLO_WORLD } = require('../../common/lib/greet.js');
 const app = express()
 const port = 3000
 
 app.get('/', (req, res) => {
-    res.send({ "greet": HELLO_WORLD })
+    res.send({ "greet": "hello-world" })
 })
 
 app.listen(port, () => {

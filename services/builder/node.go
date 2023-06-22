@@ -89,7 +89,9 @@ const nodeTemplate = `{
                 export HOME=$(pwd)
 
                 if [ -f package-lock.json ]; then
-                    npm ci --nodedir ${servicePath} --frozen-lockfile
+                    npm ci --frozen-lockfile
+                elif [ -f yarn.lock ]; then
+                    yarn install --frozen-lockfile
                 fi
 
                 runHook postBuild
@@ -97,7 +99,6 @@ const nodeTemplate = `{
               installPhase = ''
                 runHook preInstall
 
-                find .
                 mkdir -p $out/
                 cp -r node_modules $out/node_modules
 
@@ -128,7 +129,6 @@ const nodeTemplate = `{
               buildPhase = ''
                 runHook preBuild
 
-                find .
                 export PREV_PWD=$(pwd)
                 cd ${servicePath}
                 export HOME=$(pwd)
@@ -141,8 +141,6 @@ const nodeTemplate = `{
               installPhase = ''
                 runHook preInstall
 
-                find .
-
                 mkdir -p $out/app
                 cp -r * $out/app/
                 cp -r ${node_modules}/node_modules $out/app/${servicePath}/node_modules
@@ -152,13 +150,12 @@ const nodeTemplate = `{
             };
 
             docker-image = pkgs.dockerTools.buildLayeredImage {
-              name = "helloworldnode";
-              tag = "latest";
+              inherit name;
+              tag = version;
               created = "now";
 
               contents = with pkgs; [
                 cacert
-                busybox
                 nodeapp
               ] ++ buildInputs;
 
@@ -234,11 +231,14 @@ func getDependencyFiles(paths []string, cfgFolder string) []string {
 		return []string{
 			path.Join(cfgFolder, "package.json"),
 			path.Join(cfgFolder, "package-lock.json"),
+			path.Join(cfgFolder, "yarn.lock"),
 		}
 	}
 
 	for _, p := range paths {
-		if strings.Contains(p, "package.json") || strings.Contains(p, "package-lock.json") {
+		if strings.Contains(p, "package.json") ||
+			strings.Contains(p, "package-lock.json") ||
+			strings.Contains(p, "yarn.lock") {
 			re := regexp.MustCompile(`\*{1,2}`)
 			p = strings.ReplaceAll(p, ".", "\\.")
 			res = append(res, re.ReplaceAllString(p, `.*`))
