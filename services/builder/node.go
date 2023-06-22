@@ -7,7 +7,9 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"text/template"
 
@@ -46,8 +48,6 @@ const nodeTemplate = `{
 
         };
 
-        src = ./.;
-
         buildInputs = with pkgs; [
           nodejs-version
         ];
@@ -57,6 +57,10 @@ const nodeTemplate = `{
           nodePackages.pnpm
           yarn
         ];
+
+        matchRegex = regex:
+          args: path: type:
+            (builtins.match "^/nix/store/.*-source/${regex}" path) != null;
       in
       {
         packages = flake-utils.lib.flattenTree
@@ -68,10 +72,15 @@ const nodeTemplate = `{
               src = nix-filter.lib.filter {
                 root = ./.;
                 include = with nix-filter.lib;[
-                  "${servicePath}/package.json"
-                  "${servicePath}/package-lock.json"
+                  {{range .DependencyFiles}}
+                  "{{.}}"
+                  {{end}}
                 ];
               };
+
+              {{range .Env}}
+              {{.Name}} = "{{.Value}}";
+              {{end}}
 
               buildPhase = ''
                 runHook preBuild
@@ -80,7 +89,7 @@ const nodeTemplate = `{
                 export HOME=$(pwd)
 
                 if [ -f package-lock.json ]; then
-                    npm ci --frozen-lockfile
+                    npm ci --nodedir ${servicePath} --frozen-lockfile
                 fi
 
                 runHook postBuild
@@ -97,14 +106,35 @@ const nodeTemplate = `{
             };
 
             nodeapp = pkgs.stdenv.mkDerivation {
-              inherit name version src buildInputs nativeBuildInputs;
+              inherit name version buildInputs nativeBuildInputs;
+
+              src = nix-filter.lib.filter {
+                root = ./.;
+                include = with nix-filter.lib;[
+                  isDirectory
+                  {{range .DependencyFiles}}
+                  "{{.}}"
+                  {{end}}
+                  {{range .Paths}}
+                  (matchRegex "{{.}}$")
+                  {{end}}
+                ];
+              };
+
+              {{range .Env}}
+              {{.Name}} = "{{.Value}}";
+              {{end}}
+
               buildPhase = ''
                 runHook preBuild
 
+                find .
+                export PREV_PWD=$(pwd)
                 cd ${servicePath}
                 export HOME=$(pwd)
-
                 ${buildCmd}
+
+                cd $PREV_PWD
 
                 runHook postBuild
               '';
@@ -115,7 +145,7 @@ const nodeTemplate = `{
 
                 mkdir -p $out/app
                 cp -r * $out/app/
-                cp -r ${node_modules}/node_modules $out/app/node_modules
+                cp -r ${node_modules}/node_modules $out/app/${servicePath}/node_modules
 
                 runHook postInstall
               '';
@@ -128,11 +158,12 @@ const nodeTemplate = `{
 
               contents = with pkgs; [
                 cacert
+                busybox
                 nodeapp
               ] ++ buildInputs;
 
               config = {
-                workingDir = "/app";
+                workingDir = "/app/${servicePath}";
               };
             };
           };
@@ -157,8 +188,6 @@ func discoverNodeVersion(paths ...string) (string, error) {
 		}
 		defer f.Close()
 
-		fmt.Println("package.json: ", f.Name())
-
 		if err := json.NewDecoder(f).Decode(&packageJSON); err != nil {
 			return "", fmt.Errorf("could not decode package.json: %w", err)
 		}
@@ -182,6 +211,43 @@ func discoverNodeVersion(paths ...string) (string, error) {
 	return defaultNodeversion, nil
 }
 
+func getPaths(paths []string, cfgFolder string) []string {
+	res := make([]string, len(paths))
+	if len(paths) == 0 {
+		return []string{
+			path.Join(cfgFolder, ".*\\.js"),
+		}
+	}
+
+	for i, p := range paths {
+		re := regexp.MustCompile(`\*{1,2}`)
+		p = strings.ReplaceAll(p, ".", "\\.")
+		res[i] = re.ReplaceAllString(p, `.*`)
+	}
+
+	return res
+}
+
+func getDependencyFiles(paths []string, cfgFolder string) []string {
+	res := make([]string, 0, len(paths))
+	if len(paths) == 0 {
+		return []string{
+			path.Join(cfgFolder, "package.json"),
+			path.Join(cfgFolder, "package-lock.json"),
+		}
+	}
+
+	for _, p := range paths {
+		if strings.Contains(p, "package.json") || strings.Contains(p, "package-lock.json") {
+			re := regexp.MustCompile(`\*{1,2}`)
+			p = strings.ReplaceAll(p, ".", "\\.")
+			res = append(res, re.ReplaceAllString(p, `.*`))
+		}
+	}
+
+	return res
+}
+
 func buildNode(
 	ctx context.Context,
 	cfgFolder,
@@ -197,19 +263,23 @@ func buildNode(
 	}
 
 	data := struct {
-		Name        string
-		Version     string
-		BuildCmd    string
-		ServicePath string
-		NodeVersion string
-		Env         []*model.ConfigEnvironmentVariable
+		Name            string
+		Version         string
+		BuildCmd        string
+		ServicePath     string
+		NodeVersion     string
+		DependencyFiles []string
+		Paths           []string
+		Env             []*model.ConfigEnvironmentVariable
 	}{
-		Name:        service.Name,
-		Version:     version,
-		ServicePath: cfgFolder,
-		BuildCmd:    strings.Join(service.GetImage().BuildCommand, " "),
-		NodeVersion: nodeVersion,
-		Env:         service.GetEnvironment(),
+		Name:            service.Name,
+		Version:         version,
+		ServicePath:     cfgFolder,
+		BuildCmd:        strings.Join(service.GetImage().BuildCommand, " "),
+		NodeVersion:     nodeVersion,
+		Env:             service.GetEnvironment(),
+		Paths:           getPaths(service.GetImage().GetFiles(), cfgFolder),
+		DependencyFiles: getDependencyFiles(service.GetImage().GetFiles(), cfgFolder),
 	}
 
 	strbuilder := &strings.Builder{}

@@ -528,6 +528,7 @@ import (
 #ServiceBuild: {
 	buildCommand: [...string] | *[]
 	runtime:      "nodejs" | "python" | "go"
+    files:        [...string] | *[]
 }
 
 #ServiceImage: {

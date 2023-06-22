@@ -2015,16 +2015,22 @@ type ConfigServiceBuild {
 
     """
     runtime: String!
+    """
+
+    """
+    files: [String!]
 }
 
 input ConfigServiceBuildUpdateInput {
         buildCommand: [String!]
     runtime: String
+        files: [String!]
 }
 
 input ConfigServiceBuildInsertInput {
         buildCommand: [String!]
     runtime: String!
+        files: [String!]
 }
 
 input ConfigServiceBuildComparisonExp {
@@ -2033,6 +2039,7 @@ input ConfigServiceBuildComparisonExp {
     _or: [ConfigServiceBuildComparisonExp!]
     buildCommand: ConfigStringComparisonExp
     runtime: ConfigStringComparisonExp
+    files: ConfigStringComparisonExp
 }
 
 """
@@ -2051,18 +2058,24 @@ type ConfigServiceImage {
 
     """
     runtime: String
+    """
+
+    """
+    files: [String!]
 }
 
 input ConfigServiceImageUpdateInput {
     image: String
         buildCommand: [String!]
     runtime: String
+        files: [String!]
 }
 
 input ConfigServiceImageInsertInput {
     image: String
         buildCommand: [String!]
     runtime: String
+        files: [String!]
 }
 
 input ConfigServiceImageComparisonExp {
@@ -2072,6 +2085,7 @@ input ConfigServiceImageComparisonExp {
     image: ConfigStringComparisonExp
     buildCommand: ConfigStringComparisonExp
     runtime: ConfigStringComparisonExp
+    files: ConfigStringComparisonExp
 }
 
 """

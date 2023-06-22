@@ -12740,6 +12740,8 @@ type ConfigServiceBuild struct {
 	BuildCommand []string `json:"buildCommand,omitempty" toml:"buildCommand,omitempty"`
 
 	Runtime string `json:"runtime" toml:"runtime"`
+
+	Files []string `json:"files,omitempty" toml:"files,omitempty"`
 }
 
 func (o *ConfigServiceBuild) MarshalJSON() ([]byte, error) {
@@ -12748,6 +12750,9 @@ func (o *ConfigServiceBuild) MarshalJSON() ([]byte, error) {
 		m["buildCommand"] = o.BuildCommand
 	}
 	m["runtime"] = o.Runtime
+	if o.Files != nil {
+		m["files"] = o.Files
+	}
 	return json.Marshal(m)
 }
 
@@ -12765,11 +12770,20 @@ func (o *ConfigServiceBuild) GetRuntime() string {
 	return o.Runtime
 }
 
+func (o *ConfigServiceBuild) GetFiles() []string {
+	if o == nil {
+		o = &ConfigServiceBuild{}
+	}
+	return o.Files
+}
+
 type ConfigServiceBuildUpdateInput struct {
 	BuildCommand      []string `json:"buildCommand,omitempty" toml:"buildCommand,omitempty"`
 	IsSetBuildCommand bool     `json:"-"`
 	Runtime           *string  `json:"runtime,omitempty" toml:"runtime,omitempty"`
 	IsSetRuntime      bool     `json:"-"`
+	Files             []string `json:"files,omitempty" toml:"files,omitempty"`
+	IsSetFiles        bool     `json:"-"`
 }
 
 func (o *ConfigServiceBuildUpdateInput) UnmarshalGQL(v interface{}) error {
@@ -12809,6 +12823,21 @@ func (o *ConfigServiceBuildUpdateInput) UnmarshalGQL(v interface{}) error {
 		}
 		o.IsSetRuntime = true
 	}
+	if v, ok := m["files"]; ok {
+		if v != nil {
+			// clearly a not very efficient shortcut
+			b, err := json.Marshal(v)
+			if err != nil {
+				return err
+			}
+			var l []string
+			if err := json.Unmarshal(b, &l); err != nil {
+				return err
+			}
+			o.Files = l
+		}
+		o.IsSetFiles = true
+	}
 
 	return nil
 }
@@ -12834,6 +12863,13 @@ func (o *ConfigServiceBuildUpdateInput) GetRuntime() *string {
 	return o.Runtime
 }
 
+func (o *ConfigServiceBuildUpdateInput) GetFiles() []string {
+	if o == nil {
+		o = &ConfigServiceBuildUpdateInput{}
+	}
+	return o.Files
+}
+
 func (s *ConfigServiceBuild) Update(v *ConfigServiceBuildUpdateInput) {
 	if v == nil {
 		return
@@ -12853,11 +12889,22 @@ func (s *ConfigServiceBuild) Update(v *ConfigServiceBuildUpdateInput) {
 			s.Runtime = *v.Runtime
 		}
 	}
+	if v.IsSetFiles || v.Files != nil {
+		if v.Files == nil {
+			s.Files = nil
+		} else {
+			s.Files = make([]string, len(v.Files))
+			for i, e := range v.Files {
+				s.Files[i] = e
+			}
+		}
+	}
 }
 
 type ConfigServiceBuildInsertInput struct {
 	BuildCommand []string `json:"buildCommand,omitempty" toml:"buildCommand,omitempty"`
 	Runtime      string   `json:"runtime,omitempty" toml:"runtime,omitempty"`
+	Files        []string `json:"files,omitempty" toml:"files,omitempty"`
 }
 
 func (o *ConfigServiceBuildInsertInput) GetBuildCommand() []string {
@@ -12874,6 +12921,13 @@ func (o *ConfigServiceBuildInsertInput) GetRuntime() string {
 	return o.Runtime
 }
 
+func (o *ConfigServiceBuildInsertInput) GetFiles() []string {
+	if o == nil {
+		o = &ConfigServiceBuildInsertInput{}
+	}
+	return o.Files
+}
+
 func (s *ConfigServiceBuild) Insert(v *ConfigServiceBuildInsertInput) {
 	if v.BuildCommand != nil {
 		s.BuildCommand = make([]string, len(v.BuildCommand))
@@ -12882,6 +12936,12 @@ func (s *ConfigServiceBuild) Insert(v *ConfigServiceBuildInsertInput) {
 		}
 	}
 	s.Runtime = v.Runtime
+	if v.Files != nil {
+		s.Files = make([]string, len(v.Files))
+		for i, e := range v.Files {
+			s.Files[i] = e
+		}
+	}
 }
 
 func (s *ConfigServiceBuild) Clone() *ConfigServiceBuild {
@@ -12895,6 +12955,10 @@ func (s *ConfigServiceBuild) Clone() *ConfigServiceBuild {
 		copy(v.BuildCommand, s.BuildCommand)
 	}
 	v.Runtime = s.Runtime
+	if s.Files != nil {
+		v.Files = make([]string, len(s.Files))
+		copy(v.Files, s.Files)
+	}
 	return v
 }
 
@@ -12904,6 +12968,7 @@ type ConfigServiceBuildComparisonExp struct {
 	Or           []*ConfigServiceBuildComparisonExp `json:"_or,omitempty"`
 	BuildCommand *ConfigStringComparisonExp         `json:"buildCommand,omitempty"`
 	Runtime      *ConfigStringComparisonExp         `json:"runtime,omitempty"`
+	Files        *ConfigStringComparisonExp         `json:"files,omitempty"`
 }
 
 func (exp *ConfigServiceBuildComparisonExp) Matches(o *ConfigServiceBuild) bool {
@@ -12914,6 +12979,7 @@ func (exp *ConfigServiceBuildComparisonExp) Matches(o *ConfigServiceBuild) bool 
 	if o == nil {
 		o = &ConfigServiceBuild{
 			BuildCommand: []string{},
+			Files:        []string{},
 		}
 	}
 	{
@@ -12930,6 +12996,18 @@ func (exp *ConfigServiceBuildComparisonExp) Matches(o *ConfigServiceBuild) bool 
 	}
 	if !exp.Runtime.Matches(o.Runtime) {
 		return false
+	}
+	{
+		found := false
+		for _, o := range o.Files {
+			if exp.Files.Matches(o) {
+				found = true
+				break
+			}
+		}
+		if !found && exp.Files != nil {
+			return false
+		}
 	}
 
 	if exp.And != nil && !all(exp.And, o) {
@@ -12953,6 +13031,8 @@ type ConfigServiceImage struct {
 	BuildCommand []string `json:"buildCommand,omitempty" toml:"buildCommand,omitempty"`
 
 	Runtime *string `json:"runtime" toml:"runtime"`
+
+	Files []string `json:"files,omitempty" toml:"files,omitempty"`
 }
 
 func (o *ConfigServiceImage) MarshalJSON() ([]byte, error) {
@@ -12965,6 +13045,9 @@ func (o *ConfigServiceImage) MarshalJSON() ([]byte, error) {
 	}
 	if o.Runtime != nil {
 		m["runtime"] = o.Runtime
+	}
+	if o.Files != nil {
+		m["files"] = o.Files
 	}
 	return json.Marshal(m)
 }
@@ -12990,6 +13073,13 @@ func (o *ConfigServiceImage) GetRuntime() *string {
 	return o.Runtime
 }
 
+func (o *ConfigServiceImage) GetFiles() []string {
+	if o == nil {
+		o = &ConfigServiceImage{}
+	}
+	return o.Files
+}
+
 type ConfigServiceImageUpdateInput struct {
 	Image             *string  `json:"image,omitempty" toml:"image,omitempty"`
 	IsSetImage        bool     `json:"-"`
@@ -12997,6 +13087,8 @@ type ConfigServiceImageUpdateInput struct {
 	IsSetBuildCommand bool     `json:"-"`
 	Runtime           *string  `json:"runtime,omitempty" toml:"runtime,omitempty"`
 	IsSetRuntime      bool     `json:"-"`
+	Files             []string `json:"files,omitempty" toml:"files,omitempty"`
+	IsSetFiles        bool     `json:"-"`
 }
 
 func (o *ConfigServiceImageUpdateInput) UnmarshalGQL(v interface{}) error {
@@ -13053,6 +13145,21 @@ func (o *ConfigServiceImageUpdateInput) UnmarshalGQL(v interface{}) error {
 		}
 		o.IsSetRuntime = true
 	}
+	if v, ok := m["files"]; ok {
+		if v != nil {
+			// clearly a not very efficient shortcut
+			b, err := json.Marshal(v)
+			if err != nil {
+				return err
+			}
+			var l []string
+			if err := json.Unmarshal(b, &l); err != nil {
+				return err
+			}
+			o.Files = l
+		}
+		o.IsSetFiles = true
+	}
 
 	return nil
 }
@@ -13085,6 +13192,13 @@ func (o *ConfigServiceImageUpdateInput) GetRuntime() *string {
 	return o.Runtime
 }
 
+func (o *ConfigServiceImageUpdateInput) GetFiles() []string {
+	if o == nil {
+		o = &ConfigServiceImageUpdateInput{}
+	}
+	return o.Files
+}
+
 func (s *ConfigServiceImage) Update(v *ConfigServiceImageUpdateInput) {
 	if v == nil {
 		return
@@ -13105,12 +13219,23 @@ func (s *ConfigServiceImage) Update(v *ConfigServiceImageUpdateInput) {
 	if v.IsSetRuntime || v.Runtime != nil {
 		s.Runtime = v.Runtime
 	}
+	if v.IsSetFiles || v.Files != nil {
+		if v.Files == nil {
+			s.Files = nil
+		} else {
+			s.Files = make([]string, len(v.Files))
+			for i, e := range v.Files {
+				s.Files[i] = e
+			}
+		}
+	}
 }
 
 type ConfigServiceImageInsertInput struct {
 	Image        *string  `json:"image,omitempty" toml:"image,omitempty"`
 	BuildCommand []string `json:"buildCommand,omitempty" toml:"buildCommand,omitempty"`
 	Runtime      *string  `json:"runtime,omitempty" toml:"runtime,omitempty"`
+	Files        []string `json:"files,omitempty" toml:"files,omitempty"`
 }
 
 func (o *ConfigServiceImageInsertInput) GetImage() *string {
@@ -13134,6 +13259,13 @@ func (o *ConfigServiceImageInsertInput) GetRuntime() *string {
 	return o.Runtime
 }
 
+func (o *ConfigServiceImageInsertInput) GetFiles() []string {
+	if o == nil {
+		o = &ConfigServiceImageInsertInput{}
+	}
+	return o.Files
+}
+
 func (s *ConfigServiceImage) Insert(v *ConfigServiceImageInsertInput) {
 	s.Image = v.Image
 	if v.BuildCommand != nil {
@@ -13143,6 +13275,12 @@ func (s *ConfigServiceImage) Insert(v *ConfigServiceImageInsertInput) {
 		}
 	}
 	s.Runtime = v.Runtime
+	if v.Files != nil {
+		s.Files = make([]string, len(v.Files))
+		for i, e := range v.Files {
+			s.Files[i] = e
+		}
+	}
 }
 
 func (s *ConfigServiceImage) Clone() *ConfigServiceImage {
@@ -13157,6 +13295,10 @@ func (s *ConfigServiceImage) Clone() *ConfigServiceImage {
 		copy(v.BuildCommand, s.BuildCommand)
 	}
 	v.Runtime = s.Runtime
+	if s.Files != nil {
+		v.Files = make([]string, len(s.Files))
+		copy(v.Files, s.Files)
+	}
 	return v
 }
 
@@ -13167,6 +13309,7 @@ type ConfigServiceImageComparisonExp struct {
 	Image        *ConfigStringComparisonExp         `json:"image,omitempty"`
 	BuildCommand *ConfigStringComparisonExp         `json:"buildCommand,omitempty"`
 	Runtime      *ConfigStringComparisonExp         `json:"runtime,omitempty"`
+	Files        *ConfigStringComparisonExp         `json:"files,omitempty"`
 }
 
 func (exp *ConfigServiceImageComparisonExp) Matches(o *ConfigServiceImage) bool {
@@ -13177,6 +13320,7 @@ func (exp *ConfigServiceImageComparisonExp) Matches(o *ConfigServiceImage) bool 
 	if o == nil {
 		o = &ConfigServiceImage{
 			BuildCommand: []string{},
+			Files:        []string{},
 		}
 	}
 	if o.Image != nil && !exp.Image.Matches(*o.Image) {
@@ -13196,6 +13340,18 @@ func (exp *ConfigServiceImageComparisonExp) Matches(o *ConfigServiceImage) bool 
 	}
 	if o.Runtime != nil && !exp.Runtime.Matches(*o.Runtime) {
 		return false
+	}
+	{
+		found := false
+		for _, o := range o.Files {
+			if exp.Files.Matches(o) {
+				found = true
+				break
+			}
+		}
+		if !found && exp.Files != nil {
+			return false
+		}
 	}
 
 	if exp.And != nil && !all(exp.And, o) {

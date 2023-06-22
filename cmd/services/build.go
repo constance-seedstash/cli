@@ -70,13 +70,9 @@ func commandBuild(cCtx *cli.Context) error {
 	ce := clienv.FromCLI(cCtx)
 
 	cfgFolder := cCtx.String(flagConfigFolder)
+	rootFolder := cCtx.String(flagRootFolder)
 
-	ce.Infoln("Building service at %s", cfgFolder)
-
-	rootFolder, err := getRootFolder(cfgFolder)
-	if err != nil {
-		return err
-	}
+	ce.Infoln("Building service at %s with rootFolder %s", cfgFolder, rootFolder)
 
 	return builder.Build(cCtx.Context, cfgFolder, rootFolder, cCtx.String(flagVersion), ce) //nolint:wrapcheck
 }

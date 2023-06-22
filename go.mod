@@ -11,7 +11,7 @@ require (
 	github.com/google/go-cmp v0.5.9
 	github.com/hashicorp/go-getter v1.7.1
 	github.com/mattbaird/jsonpatch v0.0.0-20230413205102-771768614e91
-	github.com/nhost/be v0.0.0-20230620084826-6ecff9cfd7c2
+	github.com/nhost/be v0.0.0-20230621131640-ddccc6fc3c00
 	github.com/pelletier/go-toml/v2 v2.0.8
 	github.com/urfave/cli/v2 v2.25.5
 	golang.org/x/mod v0.10.0
