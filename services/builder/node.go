@@ -275,7 +275,7 @@ func buildNode(
 		BuildCmd:        strings.Join(service.GetImage().BuildCommand, " "),
 		NodeVersion:     nodeVersion,
 		Env:             service.GetEnvironment(),
-		Paths:           getPaths(service.GetImage().GetFiles(), relPath),
+		Paths:           getPaths(service.GetImage().GetFiles(), relPath, "js"),
 		DependencyFiles: getNodeDependencyFiles(service.GetImage().GetFiles(), relPath),
 	}
 

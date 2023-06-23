@@ -86,11 +86,11 @@ func Build(ctx context.Context, cfgFolder, rootFolder string, version string, ce
 	return nil
 }
 
-func getPaths(paths []string, svcPath string) []string {
+func getPaths(paths []string, svcPath string, extension string) []string {
 	res := make([]string, len(paths))
 	if len(paths) == 0 {
 		return []string{
-			path.Join(svcPath, ".*\\.js"),
+			path.Join(svcPath, ".*\\."+extension),
 		}
 	}
 

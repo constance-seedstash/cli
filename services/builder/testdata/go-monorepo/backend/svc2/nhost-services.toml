@@ -1,0 +1,20 @@
+[[ services ]]
+name = "go-monorepo-svc2"
+
+[services.image]
+runtime ="go"
+
+[[services.environment]]
+name = "ENV"
+value = "production"
+
+[[services.environment]]
+name = "SOMETHING"
+value = "else"
+
+[services.resources]
+replicas = 1
+
+[services.resources.compute]
+cpu = 250
+memory = 512

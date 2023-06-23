@@ -6,9 +6,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
-	"path"
 	"path/filepath"
-	"regexp"
 	"strings"
 	"text/template"
 
@@ -33,7 +31,8 @@ const goTemplate = `{
         pkgs = import nixpkgs {
           inherit system;
           overlays = [
-            (final: prev: { })
+            (final: prev: {
+            })
           ];
 
         };
@@ -52,29 +51,33 @@ const goTemplate = `{
       {
         packages = flake-utils.lib.flattenTree
           rec {
-            vendor = pkgs.stdenv.mkDerivation {
+            dependencies = pkgs.stdenv.mkDerivation {
               inherit version buildInputs nativeBuildInputs;
 
-              name = "${name}-vendor";
+              name = "${name}-dependencies";
               src = nix-filter.lib.filter {
                 root = ./.;
                 include = with nix-filter.lib;[
+                  isDirectory
                   {{range .DependencyFiles}}
                   "{{.}}"
                   {{end}}
                 ];
               };
 
+              {{range .Env}}
+              {{.Name}} = "{{.Value}}";
+              {{end}}
+
               buildPhase = ''
                 runHook preBuild
 
-                find -type d -name vendor | grep vendor
-                if [ $? -neq 0 ]; then
-                  export PREV_PWD=$(pwd)
-                  cd ${servicePath}
-                  export HOME=$(pwd)
+                export GOCACHE=$TMPDIR/.cache/go-build
+                export GOMODCACHE="$TMPDIR/.cache/mod"
+                export GOPATH="$TMPDIR/.cache/gopath"
 
-                  go mod vendor
+                if [ ! -d vendor ]; then
+                    go mod vendor
                 fi
 
                 runHook postBuild
@@ -83,13 +86,13 @@ const goTemplate = `{
                 runHook preInstall
 
                 mkdir -p $out/
-                cp -r node_modules $out/node_modules
+                cp -r vendor $out/
 
                 runHook postInstall
               '';
             };
 
-            nodeapp = pkgs.stdenv.mkDerivation {
+            app = pkgs.stdenv.mkDerivation {
               inherit name version buildInputs nativeBuildInputs;
 
               src = nix-filter.lib.filter {
@@ -112,21 +115,21 @@ const goTemplate = `{
               buildPhase = ''
                 runHook preBuild
 
-                export PREV_PWD=$(pwd)
-                cd ${servicePath}
-                export HOME=$(pwd)
-                ${buildCmd}
+                export GOCACHE=$TMPDIR/.cache/go-build
+                export GOMODCACHE="$TMPDIR/.cache/mod"
+                export GOPATH="$TMPDIR/.cache/gopath"
 
-                cd $PREV_PWD
+                rm -rf vendor
+                cp -r ${dependencies}/vendor vendor
+                go build -o ${name} ./${servicePath}/
 
                 runHook postBuild
               '';
               installPhase = ''
                 runHook preInstall
 
-                mkdir -p $out/app
-                cp -r * $out/app/
-                cp -r ${node_modules}/node_modules $out/app/${servicePath}/node_modules
+                mkdir -p $out/bin
+                cp -r ${name} $out/bin/
 
                 runHook postInstall
               '';
@@ -139,11 +142,12 @@ const goTemplate = `{
 
               contents = with pkgs; [
                 cacert
-                nodeapp
+                busybox
+                app
               ] ++ buildInputs;
 
               config = {
-                workingDir = "/app/${servicePath}";
+                workingDir = "/app";
               };
             };
           };
@@ -152,27 +156,12 @@ const goTemplate = `{
 }
 `
 
-func getGoDependencyFiles(paths []string, cfgFolder string) []string {
-	res := make([]string, 0, len(paths))
-	if len(paths) == 0 {
-		return []string{
-			path.Join(cfgFolder, "go.mod"),
-			path.Join(cfgFolder, "go.sum"),
-			path.Join(cfgFolder, "vendor"),
-		}
+func getGoDependencyFiles(paths []string) []string {
+	return []string{
+		"go\\.mod",
+		"go\\.sum",
+		"vendor",
 	}
-
-	for _, p := range paths {
-		if strings.Contains(p, "go.mod") ||
-			strings.Contains(p, "go.sum") ||
-			strings.Contains(p, "vendor") {
-			re := regexp.MustCompile(`\*{1,2}`)
-			p = strings.ReplaceAll(p, ".", "\\.")
-			res = append(res, re.ReplaceAllString(p, `.*`))
-		}
-	}
-
-	return res
 }
 
 func buildGo(
@@ -182,11 +171,11 @@ func buildGo(
 	service *model.ConfigService,
 	version string,
 ) error {
-	tmpl := template.Must(template.New("flake.nix").Parse(nodeTemplate))
+	tmpl := template.Must(template.New("flake.nix").Parse(goTemplate))
 
-	nodeVersion, err := discoverNodeVersion(cfgFolder, rootFolder)
+	relPath, err := filepath.Rel(rootFolder, cfgFolder)
 	if err != nil {
-		return err
+		return fmt.Errorf("could not get relative path: %w", err)
 	}
 
 	data := struct {
@@ -201,12 +190,11 @@ func buildGo(
 	}{
 		Name:            service.Name,
 		Version:         version,
-		ServicePath:     cfgFolder,
+		ServicePath:     relPath,
 		BuildCmd:        strings.Join(service.GetImage().BuildCommand, " "),
-		NodeVersion:     nodeVersion,
 		Env:             service.GetEnvironment(),
-		Paths:           getPaths(service.GetImage().GetFiles(), cfgFolder),
-		DependencyFiles: getGoDependencyFiles(service.GetImage().GetFiles(), cfgFolder),
+		Paths:           getPaths(service.GetImage().GetFiles(), relPath, "go"),
+		DependencyFiles: getGoDependencyFiles(service.GetImage().GetFiles()),
 	}
 
 	strbuilder := &strings.Builder{}
